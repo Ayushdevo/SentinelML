@@ -1,0 +1,60 @@
+{
+    "overall_drift_detected": true,
+    "drifted_features": [
+        "monthly_charges",
+        "usage_hours",
+        "support_calls",
+        "engagement_score"
+    ],
+    "number_of_drifted_features": 4,
+    "features": {
+        "tenure": {
+            "psi": 0.009387,
+            "ks_statistic": 0.023067,
+            "p_value": 0.26922803183873095,
+            "status": "STABLE"
+        },
+        "monthly_charges": {
+            "psi": 0.418588,
+            "ks_statistic": 0.178,
+            "p_value": 2.4091269198196393e-52,
+            "status": "HIGH"
+        },
+        "usage_hours": {
+            "psi": 0.293393,
+            "ks_statistic": 0.1892,
+            "p_value": 3.979160049874801e-59,
+            "status": "HIGH"
+        },
+        "support_calls": {
+            "psi": 0.51349,
+            "ks_statistic": 0.299067,
+            "p_value": 1.4601808201262881e-148,
+            "status": "HIGH"
+        },
+        "late_payments": {
+            "psi": 0.000958,
+            "ks_statistic": 0.0144,
+            "p_value": 0.8289531556070265,
+            "status": "STABLE"
+        },
+        "contract_score": {
+            "psi": 0.004884,
+            "ks_statistic": 0.018533,
+            "p_value": 0.5369912403080985,
+            "status": "STABLE"
+        },
+        "engagement_score": {
+            "psi": 0.348318,
+            "ks_statistic": 0.245733,
+            "p_value": 6.820079381375249e-100,
+            "status": "HIGH"
+        },
+        "service_count": {
+            "psi": 0.003089,
+            "ks_statistic": 0.010133,
+            "p_value": 0.9901020726627392,
+            "status": "STABLE"
+        }
+    }
+}

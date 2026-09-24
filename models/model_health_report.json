@@ -1,0 +1,35 @@
+{
+    "health_score": 74.3,
+    "health_status": "WATCH",
+    "metrics": {
+        "drift_ratio": 0.5,
+        "anomaly_rate": 0.1072,
+        "uncertainty_rate": 0.0808,
+        "high_risk_rate": 0.004,
+        "medium_risk_rate": 0.18
+    },
+    "drift": {
+        "drifted_features": [
+            "monthly_charges",
+            "usage_hours",
+            "support_calls",
+            "engagement_score"
+        ],
+        "number_of_drifted_features": 4,
+        "total_features": 8
+    },
+    "top_high_risk_drivers": {
+        "support_calls": 30.1132,
+        "tenure": 28.755,
+        "monthly_charges": 12.6135,
+        "usage_hours": 9.7499,
+        "contract_score": 8.0414
+    },
+    "retraining": {
+        "recommended": true,
+        "reasons": [
+            "Significant drift detected across a large proportion of input features.",
+            "Production anomaly rate exceeded 10%."
+        ]
+    }
+}

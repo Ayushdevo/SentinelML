@@ -1,0 +1,23 @@
+{
+    "high_risk_observations": 10,
+    "global_feature_importance": {
+        "support_calls": 23.296,
+        "tenure": 22.7965,
+        "monthly_charges": 15.122,
+        "contract_score": 14.2853,
+        "usage_hours": 12.0404,
+        "service_count": 6.4005,
+        "engagement_score": 5.5469,
+        "late_payments": 0.5124
+    },
+    "high_risk_root_causes": {
+        "support_calls": 30.1132,
+        "tenure": 28.755,
+        "monthly_charges": 12.6135,
+        "usage_hours": 9.7499,
+        "contract_score": 8.0414,
+        "engagement_score": 5.2409,
+        "service_count": 4.6376,
+        "late_payments": 0.8486
+    }
+}
