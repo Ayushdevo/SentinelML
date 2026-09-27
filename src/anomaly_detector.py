@@ -32,6 +32,11 @@ def analyze_production():
 
     X_reference = reference[features]
     X_production = production[features]
+    for name, frame in (("Reference", X_reference), ("Production", X_production)):
+        if not all(pd.api.types.is_numeric_dtype(dtype) for dtype in frame.dtypes):
+            raise ValueError(f"{name} features must be numeric")
+        if not np.isfinite(frame.to_numpy(dtype=float)).all():
+            raise ValueError(f"{name} features contain missing or infinite values")
 
     # ----------------------------
     # 1. Scale features
