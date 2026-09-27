@@ -1,9 +1,10 @@
 from pathlib import Path
 import json
+from functools import lru_cache
 
 import joblib
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 
@@ -16,7 +17,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
-model = joblib.load(MODEL_PATH)
+@lru_cache(maxsize=1)
+def load_model():
+    if not MODEL_PATH.exists():
+        raise HTTPException(status_code=503, detail="Baseline model is not available")
+    return joblib.load(MODEL_PATH)
 
 
 class PredictionRequest(BaseModel):
@@ -52,6 +57,7 @@ def model_health():
 
 @app.post("/predict")
 def predict(data: PredictionRequest):
+    model = load_model()
 
     input_df = pd.DataFrame(
         [
