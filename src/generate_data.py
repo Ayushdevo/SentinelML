@@ -9,6 +9,8 @@ DATA_DIR = Path("data")
 
 
 def build_dataset(n_samples=10000):
+    if not isinstance(n_samples, int) or n_samples < 10:
+        raise ValueError("n_samples must be an integer of at least 10")
     X, y = make_classification(
         n_samples=n_samples,
         n_features=8,
@@ -77,6 +79,8 @@ def create_production_data(reference):
     behaviour has changed.
     """
 
+    if reference.empty:
+        raise ValueError("Cannot simulate production data from an empty reference frame")
     production = reference.sample(
         n=2500,
         replace=True,
