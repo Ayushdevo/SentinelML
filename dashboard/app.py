@@ -127,6 +127,8 @@ for feature, values in drift["features"].items():
             "PSI": values["psi"],
             "KS Statistic": values["ks_statistic"],
             "p-value": values["p_value"],
+            "Reference missing": values.get("reference_missing_rate", 0),
+            "Production missing": values.get("production_missing_rate", 0),
             "Status": values["status"],
         }
     )
