@@ -76,6 +76,8 @@ def predict(data: PredictionRequest):
             }
         ]
     )
+    if hasattr(model, "feature_names_in_"):
+        input_df = input_df[list(model.feature_names_in_)]
 
     probability = float(
         model.predict_proba(input_df)[0, 1]
