@@ -58,6 +58,14 @@ def model_health():
     return health
 
 
+@app.get("/ready")
+def readiness():
+    missing = [str(path) for path in (MODEL_PATH, HEALTH_PATH) if not path.exists()]
+    if missing:
+        raise HTTPException(status_code=503, detail={"missing_artifacts": missing})
+    return {"status": "ready"}
+
+
 @app.post("/predict")
 def predict(data: PredictionRequest):
     model = load_model()
