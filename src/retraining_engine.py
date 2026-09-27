@@ -169,6 +169,11 @@ def calculate_health():
     # ---------------------------------
 
     report = {
+        "production_observations": total,
+        "scoring_note": (
+            "Heuristic monitoring score; retraining requires review and labeled validation, "
+            "not automatic deployment."
+        ),
         "health_score": round(
             health_score,
             2,
