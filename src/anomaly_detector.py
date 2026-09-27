@@ -18,11 +18,17 @@ TARGET = "churn"
 def analyze_production():
     reference = pd.read_csv(REFERENCE_PATH)
     production = pd.read_csv(PRODUCTION_PATH)
+    model = joblib.load(MODEL_PATH)
 
-    features = [
-        column for column in reference.columns
-        if column != TARGET
+    features = list(model.feature_names_in_) if hasattr(model, "feature_names_in_") else [
+        column for column in reference.columns if column != TARGET
     ]
+    for name, frame in (("Reference", reference), ("Production", production)):
+        missing = sorted(set(features) - set(frame.columns))
+        if missing:
+            raise ValueError(f"{name} data is missing model features: {', '.join(missing)}")
+        if frame.empty:
+            raise ValueError(f"{name} data has no rows")
 
     X_reference = reference[features]
     X_production = production[features]
@@ -65,8 +71,6 @@ def analyze_production():
     # ----------------------------
     # 3. Model predictions
     # ----------------------------
-    model = joblib.load(MODEL_PATH)
-
     probabilities = model.predict_proba(
         X_production
     )[:, 1]
