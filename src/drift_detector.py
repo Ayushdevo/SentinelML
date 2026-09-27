@@ -102,12 +102,19 @@ def classify_drift(psi, p_value):
 def detect_drift():
     reference = pd.read_csv(REFERENCE_PATH)
     production = pd.read_csv(PRODUCTION_PATH)
+    if TARGET not in reference.columns:
+        raise ValueError(f"Reference data is missing target column: {TARGET}")
 
     features = [
         column
         for column in reference.columns
         if column != TARGET
     ]
+    if not features:
+        raise ValueError("Reference data has no feature columns")
+    missing = sorted(set(features) - set(production.columns))
+    if missing:
+        raise ValueError(f"Production data is missing features: {', '.join(missing)}")
 
     report = {}
 
