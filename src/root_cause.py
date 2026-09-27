@@ -38,6 +38,11 @@ def analyze_root_causes():
         for column in production.columns
         if column not in NON_FEATURE_COLUMNS
     ]
+    if hasattr(model, "feature_names_in_"):
+        features = list(model.feature_names_in_)
+    missing = sorted(set(features) - set(production.columns))
+    if missing or production.empty:
+        raise ValueError(f"Production analysis is empty or missing features: {missing}")
 
     X = production[features]
 
