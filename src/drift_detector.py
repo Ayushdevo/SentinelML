@@ -152,12 +152,18 @@ def detect_drift():
             psi,
             p_value,
         )
+        missing_shift = abs(
+            reference[feature].isna().mean() - production[feature].isna().mean()
+        )
+        if missing_shift >= 0.10 and status in {"STABLE", "LOW"}:
+            status = "MODERATE"
 
         report[feature] = {
             "reference_count": int(len(ref_values)),
             "production_count": int(len(prod_values)),
             "reference_missing_rate": round(float(reference[feature].isna().mean()), 6),
             "production_missing_rate": round(float(production[feature].isna().mean()), 6),
+            "missing_rate_shift": round(float(missing_shift), 6),
             "psi": round(float(psi), 6),
             "ks_statistic": round(
                 float(ks_statistic), 6
