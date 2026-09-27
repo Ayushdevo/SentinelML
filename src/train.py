@@ -29,6 +29,8 @@ def train():
         raise ValueError("Training target must contain both binary classes without missing values")
     if df.empty or df.isna().any().any():
         raise ValueError("Training features must contain nonempty, complete data")
+    if df[TARGET].value_counts().min() < 2 or len(df) < 10:
+        raise ValueError("Training requires at least 10 rows and two examples per class")
 
     X = df.drop(columns=[TARGET])
     y = df[TARGET]
