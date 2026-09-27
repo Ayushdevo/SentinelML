@@ -23,6 +23,12 @@ TARGET = "churn"
 
 def train():
     df = pd.read_csv(DATA_PATH)
+    if TARGET not in df:
+        raise ValueError(f"Training data is missing target column: {TARGET}")
+    if df[TARGET].isna().any() or set(df[TARGET].unique()) != {0, 1}:
+        raise ValueError("Training target must contain both binary classes without missing values")
+    if df.empty or df.isna().any().any():
+        raise ValueError("Training features must contain nonempty, complete data")
 
     X = df.drop(columns=[TARGET])
     y = df[TARGET]
