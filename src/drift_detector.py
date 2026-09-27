@@ -135,6 +135,8 @@ def detect_drift():
 
         ref_values = reference[feature].dropna()
         prod_values = production[feature].dropna()
+        if ref_values.empty or prod_values.empty:
+            raise ValueError(f"Feature {feature!r} has no usable samples")
 
         psi = calculate_psi(
             ref_values,
@@ -152,6 +154,10 @@ def detect_drift():
         )
 
         report[feature] = {
+            "reference_count": int(len(ref_values)),
+            "production_count": int(len(prod_values)),
+            "reference_missing_rate": round(float(reference[feature].isna().mean()), 6),
+            "production_missing_rate": round(float(production[feature].isna().mean()), 6),
             "psi": round(float(psi), 6),
             "ks_statistic": round(
                 float(ks_statistic), 6
