@@ -5,7 +5,7 @@ from functools import lru_cache
 import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 MODEL_PATH = Path("models/baseline_model.joblib")
@@ -25,6 +25,7 @@ def load_model():
 
 
 class PredictionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     tenure: float
     monthly_charges: float
     usage_hours: float
