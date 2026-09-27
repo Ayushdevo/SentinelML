@@ -24,6 +24,13 @@ def load_json(path):
 
 @st.cache_data
 def load_data():
+    required = (HEALTH_PATH, DRIFT_PATH, ROOT_CAUSE_PATH, PRODUCTION_PATH)
+    missing = [str(path) for path in required if not path.exists()]
+    if missing:
+        raise FileNotFoundError(
+            "Generate monitoring reports with `python -m src.run_pipeline` first. "
+            f"Missing: {', '.join(missing)}"
+        )
     health = load_json(HEALTH_PATH)
     drift = load_json(DRIFT_PATH)
     root_cause = load_json(ROOT_CAUSE_PATH)
@@ -32,7 +39,11 @@ def load_data():
     return health, drift, root_cause, production
 
 
-health, drift, root_cause, production = load_data()
+try:
+    health, drift, root_cause, production = load_data()
+except (FileNotFoundError, ValueError) as exc:
+    st.error(str(exc))
+    st.stop()
 
 
 st.title("🛡️ SentinelML")
