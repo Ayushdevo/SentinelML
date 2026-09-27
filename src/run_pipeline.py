@@ -18,8 +18,10 @@ def main():
     # Only regenerate data if files do not exist
     reference_path = Path("data/reference.csv")
     production_path = Path("data/production.csv")
+    model_path = Path("models/baseline_model.joblib")
 
     if not reference_path.exists() or not production_path.exists():
+        reference_path.parent.mkdir(parents=True, exist_ok=True)
 
         dataset = build_dataset()
 
@@ -40,6 +42,10 @@ def main():
         )
 
         print("Datasets generated.")
+
+    if not model_path.exists():
+        print("\n[setup] Training baseline model...")
+        train()
 
     print("\n[1/4] Detecting drift...")
     detect_drift()
