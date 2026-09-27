@@ -22,6 +22,12 @@ def calculate_health():
     production = pd.read_csv(PRODUCTION_PATH)
 
     total = len(production)
+    if total == 0:
+        raise ValueError("Cannot calculate model health without production observations")
+    required = {"is_anomaly", "high_uncertainty", "prediction_risk"}
+    missing = required - set(production.columns)
+    if missing:
+        raise ValueError(f"Production analysis is missing columns: {sorted(missing)}")
 
     anomaly_rate = (
         production["is_anomaly"].mean()
