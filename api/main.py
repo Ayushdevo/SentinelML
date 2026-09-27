@@ -45,6 +45,8 @@ def root():
 
 @app.get("/health")
 def model_health():
+    if not HEALTH_PATH.exists():
+        raise HTTPException(status_code=503, detail="Model health report is not available")
     with open(
         HEALTH_PATH,
         "r",
