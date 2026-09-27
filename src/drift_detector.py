@@ -22,8 +22,16 @@ def calculate_psi(expected, actual, bins=10):
     PSI >= 0.25 -> Significant drift
     """
 
-    expected = np.asarray(expected)
-    actual = np.asarray(actual)
+    expected = np.asarray(expected, dtype=float)
+    actual = np.asarray(actual, dtype=float)
+    if not len(expected) or not len(actual):
+        raise ValueError("PSI requires nonempty reference and production samples")
+    if not np.isfinite(expected).all() or not np.isfinite(actual).all():
+        raise ValueError("PSI requires finite numeric values")
+    if bins < 2:
+        raise ValueError("PSI requires at least two bins")
+    if np.min(expected) == np.max(expected) == np.min(actual) == np.max(actual):
+        return 0.0
 
     # Quantile-based bins from reference distribution
     breakpoints = np.unique(
@@ -40,6 +48,8 @@ def calculate_psi(expected, actual, bins=10):
             max(expected.max(), actual.max()),
             bins + 1,
         )
+        if breakpoints[0] == breakpoints[-1]:
+            breakpoints = np.array([breakpoints[0] - 0.5, breakpoints[0] + 0.5])
 
     # Make sure all production values are captured
     breakpoints[0] = -np.inf
@@ -61,6 +71,8 @@ def calculate_psi(expected, actual, bins=10):
     # Prevent division by zero
     expected_pct = np.clip(expected_pct, 1e-6, None)
     actual_pct = np.clip(actual_pct, 1e-6, None)
+    expected_pct /= expected_pct.sum()
+    actual_pct /= actual_pct.sum()
 
     psi = np.sum(
         (actual_pct - expected_pct)
