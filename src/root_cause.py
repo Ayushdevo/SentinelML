@@ -38,6 +38,11 @@ def analyze_root_causes():
         for column in production.columns
         if column not in NON_FEATURE_COLUMNS
     ]
+    if hasattr(model, "feature_names_in_"):
+        features = list(model.feature_names_in_)
+    missing = sorted(set(features) - set(production.columns))
+    if missing or production.empty:
+        raise ValueError(f"Production analysis is empty or missing features: {missing}")
 
     X = production[features]
 
@@ -54,6 +59,13 @@ def analyze_root_causes():
         shap_values = shap_values[-1]
 
     shap_values = np.asarray(shap_values)
+    if shap_values.ndim == 3:
+        # Multiclass explainers return (rows, features, classes).
+        shap_values = shap_values[:, :, 1]
+    if shap_values.shape != (len(X), len(features)):
+        raise ValueError(
+            f"Unexpected SHAP shape {shap_values.shape}; expected {X.shape}"
+        )
 
     # --------------------------------
     # 2. Global feature importance

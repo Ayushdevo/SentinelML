@@ -367,8 +367,8 @@ sentinel-ml/
 Clone the repository:
 
 ```bash
-git clone <repository-url>
-cd sentinel-ml
+git clone https://github.com/Ayushdevo/SentinelML.git
+cd SentinelML
 ```
 
 Create a virtual environment:
@@ -483,8 +483,16 @@ models/model_health_report.json
 Instead of executing each monitoring component manually:
 
 ```bash
-python src/run_pipeline.py
+python -m src.run_pipeline
 ```
+
+Run from the repository root. The pipeline generates both sample datasets when
+they are absent and trains the baseline model when its artifact is absent.
+Existing datasets and model artifacts are reused. To retrain after changing
+the reference data, run `python -m src.train` first.
+
+Run regression checks with `python -m pip install -r requirements-dev.txt`
+and `python -m pytest -q`.
 
 Pipeline:
 

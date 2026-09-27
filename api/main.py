@@ -1,10 +1,11 @@
 from pathlib import Path
 import json
+from functools import lru_cache
 
 import joblib
 import pandas as pd
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, ConfigDict
 
 
 MODEL_PATH = Path("models/baseline_model.joblib")
@@ -16,10 +17,15 @@ app = FastAPI(
     version="1.0.0",
 )
 
-model = joblib.load(MODEL_PATH)
+@lru_cache(maxsize=1)
+def load_model():
+    if not MODEL_PATH.exists():
+        raise HTTPException(status_code=503, detail="Baseline model is not available")
+    return joblib.load(MODEL_PATH)
 
 
 class PredictionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     tenure: float
     monthly_charges: float
     usage_hours: float
@@ -40,6 +46,8 @@ def root():
 
 @app.get("/health")
 def model_health():
+    if not HEALTH_PATH.exists():
+        raise HTTPException(status_code=503, detail="Model health report is not available")
     with open(
         HEALTH_PATH,
         "r",
@@ -50,8 +58,17 @@ def model_health():
     return health
 
 
+@app.get("/ready")
+def readiness():
+    missing = [str(path) for path in (MODEL_PATH, HEALTH_PATH) if not path.exists()]
+    if missing:
+        raise HTTPException(status_code=503, detail={"missing_artifacts": missing})
+    return {"status": "ready"}
+
+
 @app.post("/predict")
 def predict(data: PredictionRequest):
+    model = load_model()
 
     input_df = pd.DataFrame(
         [
@@ -67,6 +84,8 @@ def predict(data: PredictionRequest):
             }
         ]
     )
+    if hasattr(model, "feature_names_in_"):
+        input_df = input_df[list(model.feature_names_in_)]
 
     probability = float(
         model.predict_proba(input_df)[0, 1]

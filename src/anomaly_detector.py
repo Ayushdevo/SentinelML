@@ -18,14 +18,25 @@ TARGET = "churn"
 def analyze_production():
     reference = pd.read_csv(REFERENCE_PATH)
     production = pd.read_csv(PRODUCTION_PATH)
+    model = joblib.load(MODEL_PATH)
 
-    features = [
-        column for column in reference.columns
-        if column != TARGET
+    features = list(model.feature_names_in_) if hasattr(model, "feature_names_in_") else [
+        column for column in reference.columns if column != TARGET
     ]
+    for name, frame in (("Reference", reference), ("Production", production)):
+        missing = sorted(set(features) - set(frame.columns))
+        if missing:
+            raise ValueError(f"{name} data is missing model features: {', '.join(missing)}")
+        if frame.empty:
+            raise ValueError(f"{name} data has no rows")
 
     X_reference = reference[features]
     X_production = production[features]
+    for name, frame in (("Reference", X_reference), ("Production", X_production)):
+        if not all(pd.api.types.is_numeric_dtype(dtype) for dtype in frame.dtypes):
+            raise ValueError(f"{name} features must be numeric")
+        if not np.isfinite(frame.to_numpy(dtype=float)).all():
+            raise ValueError(f"{name} features contain missing or infinite values")
 
     # ----------------------------
     # 1. Scale features
@@ -65,8 +76,6 @@ def analyze_production():
     # ----------------------------
     # 3. Model predictions
     # ----------------------------
-    model = joblib.load(MODEL_PATH)
-
     probabilities = model.predict_proba(
         X_production
     )[:, 1]

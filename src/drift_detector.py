@@ -22,8 +22,16 @@ def calculate_psi(expected, actual, bins=10):
     PSI >= 0.25 -> Significant drift
     """
 
-    expected = np.asarray(expected)
-    actual = np.asarray(actual)
+    expected = np.asarray(expected, dtype=float)
+    actual = np.asarray(actual, dtype=float)
+    if not len(expected) or not len(actual):
+        raise ValueError("PSI requires nonempty reference and production samples")
+    if not np.isfinite(expected).all() or not np.isfinite(actual).all():
+        raise ValueError("PSI requires finite numeric values")
+    if bins < 2:
+        raise ValueError("PSI requires at least two bins")
+    if np.min(expected) == np.max(expected) == np.min(actual) == np.max(actual):
+        return 0.0
 
     # Quantile-based bins from reference distribution
     breakpoints = np.unique(
@@ -40,6 +48,8 @@ def calculate_psi(expected, actual, bins=10):
             max(expected.max(), actual.max()),
             bins + 1,
         )
+        if breakpoints[0] == breakpoints[-1]:
+            breakpoints = np.array([breakpoints[0] - 0.5, breakpoints[0] + 0.5])
 
     # Make sure all production values are captured
     breakpoints[0] = -np.inf
@@ -61,6 +71,8 @@ def calculate_psi(expected, actual, bins=10):
     # Prevent division by zero
     expected_pct = np.clip(expected_pct, 1e-6, None)
     actual_pct = np.clip(actual_pct, 1e-6, None)
+    expected_pct /= expected_pct.sum()
+    actual_pct /= actual_pct.sum()
 
     psi = np.sum(
         (actual_pct - expected_pct)
@@ -90,12 +102,19 @@ def classify_drift(psi, p_value):
 def detect_drift():
     reference = pd.read_csv(REFERENCE_PATH)
     production = pd.read_csv(PRODUCTION_PATH)
+    if TARGET not in reference.columns:
+        raise ValueError(f"Reference data is missing target column: {TARGET}")
 
     features = [
         column
         for column in reference.columns
         if column != TARGET
     ]
+    if not features:
+        raise ValueError("Reference data has no feature columns")
+    missing = sorted(set(features) - set(production.columns))
+    if missing:
+        raise ValueError(f"Production data is missing features: {', '.join(missing)}")
 
     report = {}
 
@@ -116,6 +135,8 @@ def detect_drift():
 
         ref_values = reference[feature].dropna()
         prod_values = production[feature].dropna()
+        if ref_values.empty or prod_values.empty:
+            raise ValueError(f"Feature {feature!r} has no usable samples")
 
         psi = calculate_psi(
             ref_values,
@@ -131,8 +152,18 @@ def detect_drift():
             psi,
             p_value,
         )
+        missing_shift = abs(
+            reference[feature].isna().mean() - production[feature].isna().mean()
+        )
+        if missing_shift >= 0.10 and status in {"STABLE", "LOW"}:
+            status = "MODERATE"
 
         report[feature] = {
+            "reference_count": int(len(ref_values)),
+            "production_count": int(len(prod_values)),
+            "reference_missing_rate": round(float(reference[feature].isna().mean()), 6),
+            "production_missing_rate": round(float(production[feature].isna().mean()), 6),
+            "missing_rate_shift": round(float(missing_shift), 6),
             "psi": round(float(psi), 6),
             "ks_statistic": round(
                 float(ks_statistic), 6
