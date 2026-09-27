@@ -20,7 +20,12 @@ def main():
     production_path = Path("data/production.csv")
     model_path = Path("models/baseline_model.joblib")
 
-    if not reference_path.exists() or not production_path.exists():
+    if reference_path.exists() != production_path.exists():
+        raise FileNotFoundError(
+            "Only one dataset exists; restore its matching dataset or remove both to regenerate"
+        )
+
+    if not reference_path.exists():
         reference_path.parent.mkdir(parents=True, exist_ok=True)
 
         dataset = build_dataset()
