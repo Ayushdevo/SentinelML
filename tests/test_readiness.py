@@ -30,3 +30,27 @@ def test_readiness_succeeds_when_required_artifacts_exist(tmp_path, monkeypatch)
 
     assert response.status_code == 200
     assert response.json() == {"status": "ready"}
+
+
+def test_readiness_rejects_corrupt_health_json(tmp_path, monkeypatch):
+    model = tmp_path / "model.joblib"
+    report = tmp_path / "health.json"
+    model.write_bytes(b"model")
+    report.write_text("{oops", encoding="utf-8")
+    monkeypatch.setattr(main, "MODEL_PATH", model)
+    monkeypatch.setattr(main, "HEALTH_PATH", report)
+    response = TestClient(main.app).get("/ready")
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Model health report is unreadable"
+
+
+def test_readiness_rejects_nonobject_health_json(tmp_path, monkeypatch):
+    model = tmp_path / "model.joblib"
+    report = tmp_path / "health.json"
+    model.write_bytes(b"model")
+    report.write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(main, "MODEL_PATH", model)
+    monkeypatch.setattr(main, "HEALTH_PATH", report)
+    response = TestClient(main.app).get("/ready")
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Invalid model health report"

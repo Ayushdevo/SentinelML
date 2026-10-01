@@ -65,6 +65,15 @@ def readiness():
     missing = [str(path) for path in (MODEL_PATH, HEALTH_PATH) if not path.exists()]
     if missing:
         raise HTTPException(status_code=503, detail={"missing_artifacts": missing})
+    try:
+        with open(HEALTH_PATH, "r", encoding="utf-8") as file:
+            report = json.load(file)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=503, detail="Model health report is unreadable"
+        ) from exc
+    if not isinstance(report, dict):
+        raise HTTPException(status_code=503, detail="Invalid model health report")
     return {"status": "ready"}
 
 
