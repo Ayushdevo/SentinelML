@@ -3,6 +3,7 @@ import json
 from functools import lru_cache
 
 import joblib
+import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
@@ -88,9 +89,12 @@ def predict(data: PredictionRequest):
     if hasattr(model, "feature_names_in_"):
         input_df = input_df[list(model.feature_names_in_)]
 
-    probability = float(
-        model.predict_proba(input_df)[0, 1]
-    )
+    # Predictors may expose class probabilities in a nonstandard order.
+    classes = list(getattr(model, "classes_", (0, 1)))
+    if 1 not in classes:
+        raise HTTPException(status_code=503, detail="Model has no positive class")
+    probabilities = np.asarray(model.predict_proba(input_df), dtype=float)
+    probability = float(probabilities[0, classes.index(1)])
 
     prediction = int(
         probability >= 0.5

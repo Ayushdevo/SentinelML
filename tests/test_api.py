@@ -34,3 +34,22 @@ def test_corrupt_health_report_returns_503(tmp_path, monkeypatch):
     response = TestClient(main.app).get("/health")
     assert response.status_code == 503
     assert response.json()["detail"] == "Model health report is unreadable"
+
+
+def test_predict_uses_label_one_when_model_class_order_is_reversed(monkeypatch):
+    import numpy as np
+
+    class ReversedModel:
+        classes_ = np.array([1, 0])
+        feature_names_in_ = list(main.PredictionRequest.model_fields)
+
+        def predict_proba(self, frame):
+            assert list(frame.columns) == list(self.feature_names_in_)
+            return np.array([[0.8, 0.2]])
+
+    monkeypatch.setattr(main, "load_model", lambda: ReversedModel())
+    payload = dict.fromkeys(main.PredictionRequest.model_fields, 1.0)
+    response = TestClient(main.app).post("/predict", json=payload)
+    assert response.status_code == 200
+    assert response.json()["churn_probability"] == 0.8
+    assert response.json()["prediction"] == 1
