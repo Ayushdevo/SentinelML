@@ -66,6 +66,8 @@ def analyze_root_causes():
         raise ValueError(
             f"Unexpected SHAP shape {shap_values.shape}; expected {X.shape}"
         )
+    if not np.isfinite(shap_values).all():
+        raise ValueError("SHAP attributions must contain only finite values")
 
     # --------------------------------
     # 2. Global feature importance
