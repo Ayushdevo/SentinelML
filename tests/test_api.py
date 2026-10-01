@@ -25,3 +25,12 @@ def test_invalid_payload_is_rejected_before_model_load(tmp_path, monkeypatch):
 def test_missing_health_report_returns_503(tmp_path, monkeypatch):
     monkeypatch.setattr(main, "HEALTH_PATH", tmp_path / "missing.json")
     assert TestClient(main.app).get("/health").status_code == 503
+
+
+def test_corrupt_health_report_returns_503(tmp_path, monkeypatch):
+    report = tmp_path / "health.json"
+    report.write_text("{not valid json", encoding="utf-8")
+    monkeypatch.setattr(main, "HEALTH_PATH", report)
+    response = TestClient(main.app).get("/health")
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Model health report is unreadable"

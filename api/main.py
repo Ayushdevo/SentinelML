@@ -48,12 +48,13 @@ def root():
 def model_health():
     if not HEALTH_PATH.exists():
         raise HTTPException(status_code=503, detail="Model health report is not available")
-    with open(
-        HEALTH_PATH,
-        "r",
-        encoding="utf-8",
-    ) as file:
-        health = json.load(file)
+    try:
+        with open(HEALTH_PATH, "r", encoding="utf-8") as file:
+            health = json.load(file)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=503, detail="Model health report is unreadable"
+        ) from exc
 
     return health
 
