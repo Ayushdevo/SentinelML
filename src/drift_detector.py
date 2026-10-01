@@ -133,6 +133,11 @@ def detect_drift():
     print("-" * 72)
 
     for feature in features:
+        if not (
+            pd.api.types.is_numeric_dtype(reference[feature])
+            and pd.api.types.is_numeric_dtype(production[feature])
+        ):
+            raise ValueError(f"Feature {feature!r} must be numeric in both datasets")
 
         ref_values = reference[feature].dropna()
         prod_values = production[feature].dropna()

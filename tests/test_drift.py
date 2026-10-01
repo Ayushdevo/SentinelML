@@ -42,3 +42,16 @@ def test_missingness_shift_is_reported_even_with_stable_values(tmp_path, monkeyp
 def test_psi_rejects_noninteger_or_too_few_bins(bins):
     with pytest.raises(ValueError, match="PSI bins"):
         calculate_psi([1.0, 2.0], [2.0, 3.0], bins=bins)
+
+
+def test_drift_fails_clearly_when_feature_type_changes(tmp_path, monkeypatch):
+    reference = pd.DataFrame({"signal": [1.0, 2.0], "churn": [0, 1]})
+    production = pd.DataFrame({"signal": ["bad", "values"]})
+    reference.to_csv(tmp_path / "reference.csv", index=False)
+    production.to_csv(tmp_path / "production.csv", index=False)
+    monkeypatch.setattr(drift_detector, "REFERENCE_PATH", tmp_path / "reference.csv")
+    monkeypatch.setattr(drift_detector, "PRODUCTION_PATH", tmp_path / "production.csv")
+    monkeypatch.setattr(drift_detector, "OUTPUT_PATH", tmp_path / "drift.json")
+    with pytest.raises(ValueError, match="signal.*numeric"):
+        drift_detector.detect_drift()
+    assert not (tmp_path / "drift.json").exists()
