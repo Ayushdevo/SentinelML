@@ -76,9 +76,17 @@ def analyze_production():
     # ----------------------------
     # 3. Model predictions
     # ----------------------------
-    probabilities = model.predict_proba(
-        X_production
-    )[:, 1]
+    classes = list(getattr(model, "classes_", (0, 1)))
+    if len(classes) != 2 or 1 not in classes:
+        raise ValueError("Churn model must have a positive class labeled 1")
+    class_probabilities = np.asarray(model.predict_proba(X_production), dtype=float)
+    if (
+        class_probabilities.shape != (len(production), len(classes))
+        or not np.isfinite(class_probabilities).all()
+        or np.any((class_probabilities < 0) | (class_probabilities > 1))
+    ):
+        raise ValueError("Model returned invalid class probabilities")
+    probabilities = class_probabilities[:, classes.index(1)]
 
     predictions = (
         probabilities >= 0.5
