@@ -53,3 +53,21 @@ def test_predict_uses_label_one_when_model_class_order_is_reversed(monkeypatch):
     assert response.status_code == 200
     assert response.json()["churn_probability"] == 0.8
     assert response.json()["prediction"] == 1
+
+
+import pytest
+
+
+@pytest.mark.parametrize("probs", [[[float("nan"), 0.5]], [[1.5, -0.5]], [[0.5]]])
+def test_predict_rejects_invalid_model_probabilities(probs, monkeypatch):
+    class InvalidModel:
+        classes_ = [0, 1]
+
+        def predict_proba(self, frame):
+            return probs
+
+    monkeypatch.setattr(main, "load_model", lambda: InvalidModel())
+    payload = dict.fromkeys(main.PredictionRequest.model_fields, 1.0)
+    response = TestClient(main.app).post("/predict", json=payload)
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Model returned invalid probabilities"

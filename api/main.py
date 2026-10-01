@@ -94,6 +94,14 @@ def predict(data: PredictionRequest):
     if 1 not in classes:
         raise HTTPException(status_code=503, detail="Model has no positive class")
     probabilities = np.asarray(model.predict_proba(input_df), dtype=float)
+    if (
+        probabilities.shape != (1, len(classes))
+        or not np.isfinite(probabilities).all()
+        or np.any((probabilities < 0) | (probabilities > 1))
+    ):
+        raise HTTPException(
+            status_code=503, detail="Model returned invalid probabilities"
+        )
     probability = float(probabilities[0, classes.index(1)])
 
     prediction = int(
