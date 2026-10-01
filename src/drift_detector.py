@@ -1,4 +1,5 @@
 import json
+from numbers import Integral
 from pathlib import Path
 
 import numpy as np
@@ -28,8 +29,8 @@ def calculate_psi(expected, actual, bins=10):
         raise ValueError("PSI requires nonempty reference and production samples")
     if not np.isfinite(expected).all() or not np.isfinite(actual).all():
         raise ValueError("PSI requires finite numeric values")
-    if bins < 2:
-        raise ValueError("PSI requires at least two bins")
+    if isinstance(bins, bool) or not isinstance(bins, Integral) or bins < 2:
+        raise ValueError("PSI bins must be an integer of at least two")
     if np.min(expected) == np.max(expected) == np.min(actual) == np.max(actual):
         return 0.0
 

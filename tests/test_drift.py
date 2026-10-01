@@ -36,3 +36,9 @@ def test_missingness_shift_is_reported_even_with_stable_values(tmp_path, monkeyp
     assert report["overall_drift_detected"] is True
     assert report["features"]["signal"]["status"] == "MODERATE"
     assert report["features"]["signal"]["production_count"] == 20
+
+
+@pytest.mark.parametrize("bins", [0, 1, 2.5, True, "10"])
+def test_psi_rejects_noninteger_or_too_few_bins(bins):
+    with pytest.raises(ValueError, match="PSI bins"):
+        calculate_psi([1.0, 2.0], [2.0, 3.0], bins=bins)
