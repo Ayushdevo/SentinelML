@@ -9,7 +9,7 @@ DATA_DIR = Path("data")
 
 
 def build_dataset(n_samples=10000):
-    if not isinstance(n_samples, int) or n_samples < 10:
+    if isinstance(n_samples, bool) or not isinstance(n_samples, int) or n_samples < 10:
         raise ValueError("n_samples must be an integer of at least 10")
     X, y = make_classification(
         n_samples=n_samples,
