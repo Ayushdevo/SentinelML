@@ -28,6 +28,13 @@ def calculate_health():
     missing = required - set(production.columns)
     if missing:
         raise ValueError(f"Production analysis is missing columns: {sorted(missing)}")
+    for flag in ("is_anomaly", "high_uncertainty"):
+        numeric = pd.to_numeric(production[flag], errors="coerce")
+        if not numeric.isin([0, 1]).all():
+            raise ValueError(f"Production flag {flag!r} must contain only 0 or 1")
+        production[flag] = numeric.astype(int)
+    if not production["prediction_risk"].isin({"LOW", "MEDIUM", "HIGH"}).all():
+        raise ValueError("Production prediction_risk contains unknown or missing labels")
 
     anomaly_rate = (
         production["is_anomaly"].mean()
