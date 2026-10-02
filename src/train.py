@@ -35,6 +35,11 @@ def train():
 
     X = df.drop(columns=[TARGET])
     y = df[TARGET]
+    if X.shape[1] == 0 or not all(pd.api.types.is_numeric_dtype(dtype) for dtype in X.dtypes):
+        raise ValueError("Training features must be numeric and nonempty")
+    if not np.isfinite(X.to_numpy(dtype=float)).all():
+        raise ValueError("Training features must be finite")
+
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
