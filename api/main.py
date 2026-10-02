@@ -107,6 +107,7 @@ def predict(data: PredictionRequest):
         probabilities.shape != (1, len(classes))
         or not np.isfinite(probabilities).all()
         or np.any((probabilities < 0) | (probabilities > 1))
+        or not np.allclose(probabilities.sum(axis=1), 1.0, rtol=0, atol=1e-6)
     ):
         raise HTTPException(
             status_code=503, detail="Model returned invalid probabilities"
