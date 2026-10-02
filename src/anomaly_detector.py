@@ -84,6 +84,7 @@ def analyze_production():
         class_probabilities.shape != (len(production), len(classes))
         or not np.isfinite(class_probabilities).all()
         or np.any((class_probabilities < 0) | (class_probabilities > 1))
+        or not np.allclose(class_probabilities.sum(axis=1), 1.0, rtol=0, atol=1e-6)
     ):
         raise ValueError("Model returned invalid class probabilities")
     probabilities = class_probabilities[:, classes.index(1)]
