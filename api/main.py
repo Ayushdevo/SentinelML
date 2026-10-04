@@ -100,8 +100,8 @@ def predict(data: PredictionRequest):
 
     # Predictors may expose class probabilities in a nonstandard order.
     classes = list(getattr(model, "classes_", (0, 1)))
-    if 1 not in classes:
-        raise HTTPException(status_code=503, detail="Model has no positive class")
+    if len(classes) != 2 or set(classes) != {0, 1}:
+        raise HTTPException(status_code=503, detail="Model must expose binary churn classes 0 and 1")
     probabilities = np.asarray(model.predict_proba(input_df), dtype=float)
     if (
         probabilities.shape != (1, len(classes))

@@ -83,3 +83,15 @@ def test_health_rejects_inconsistent_drift_summary(tmp_path, monkeypatch, count,
     setup_health(tmp_path, monkeypatch, {"is_anomaly": 0, "high_uncertainty": 0, "prediction_risk": "LOW"}, drift)
     with pytest.raises(ValueError, match="Drift report"):
         retraining_engine.calculate_health()
+
+
+@pytest.mark.parametrize("classes", [(0, 1, 2), (1, 1), (-1, 1)])
+def test_prediction_api_rejects_nonbinary_churn_models(monkeypatch, classes):
+    from api import main as api
+    from fastapi import HTTPException
+    model = SimpleNamespace(classes_=classes)
+    monkeypatch.setattr(api, "load_model", lambda: model)
+    request = api.PredictionRequest(**{name: 1.0 for name in api.PredictionRequest.model_fields})
+    with pytest.raises(HTTPException) as error:
+        api.predict(request)
+    assert error.value.status_code == 503
