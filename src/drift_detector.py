@@ -25,6 +25,8 @@ def calculate_psi(expected, actual, bins=10):
 
     expected = np.asarray(expected, dtype=float)
     actual = np.asarray(actual, dtype=float)
+    if expected.ndim != 1 or actual.ndim != 1:
+        raise ValueError("PSI samples must be one-dimensional")
     if not len(expected) or not len(actual):
         raise ValueError("PSI requires nonempty reference and production samples")
     if not np.isfinite(expected).all() or not np.isfinite(actual).all():
