@@ -46,3 +46,11 @@ def test_training_rejects_split_without_positive_evaluation_class(tmp_path, monk
     monkeypatch.setattr(training, "DATA_PATH", path)
     with pytest.raises(ValueError, match="evaluation splits"):
         training.train()
+
+
+@pytest.mark.parametrize("risk", ["UNKNOWN", None])
+def test_root_cause_rejects_invalid_risk_labels(tmp_path, monkeypatch, risk):
+    setup_root(tmp_path, monkeypatch, pd.DataFrame({"signal": [1.], "prediction_risk": [risk]}), np.ones((1, 1)))
+    with pytest.raises(ValueError, match="prediction_risk"):
+        root_cause.analyze_root_causes()
+    assert not (tmp_path / "out.json").exists()

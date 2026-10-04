@@ -44,6 +44,9 @@ def analyze_root_causes():
     if missing or production.empty:
         raise ValueError(f"Production analysis is empty or missing features: {missing}")
 
+    if "prediction_risk" not in production or not production["prediction_risk"].isin({"LOW", "MEDIUM", "HIGH"}).all():
+        raise ValueError("Production prediction_risk must contain valid risk labels")
+
     X = production[features]
 
     # --------------------------------
