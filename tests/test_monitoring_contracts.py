@@ -69,3 +69,9 @@ def test_root_cause_selects_positive_class_in_reversed_order(tmp_path, monkeypat
     setup_root(tmp_path, monkeypatch, pd.DataFrame({"signal": [1.], "prediction_risk": ["HIGH"]}), values, classes=(1, 0))
     root_cause.analyze_root_causes()
     assert json.loads((tmp_path / "out.json").read_text())["global_feature_importance"]["signal"] == 100
+
+
+def test_health_rejects_risk_label_that_disagrees_with_flags(tmp_path, monkeypatch):
+    setup_health(tmp_path, monkeypatch, {"is_anomaly": 1, "high_uncertainty": 1, "prediction_risk": "LOW"})
+    with pytest.raises(ValueError, match="inconsistent"):
+        retraining_engine.calculate_health()

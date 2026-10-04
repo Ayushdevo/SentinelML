@@ -36,6 +36,14 @@ def calculate_health():
     if not production["prediction_risk"].isin({"LOW", "MEDIUM", "HIGH"}).all():
         raise ValueError("Production prediction_risk contains unknown or missing labels")
 
+    expected_risk = production.apply(
+        lambda row: "HIGH" if row["is_anomaly"] and row["high_uncertainty"]
+        else "MEDIUM" if row["is_anomaly"] or row["high_uncertainty"] else "LOW",
+        axis=1,
+    )
+    if not production["prediction_risk"].eq(expected_risk).all():
+        raise ValueError("Production risk labels are inconsistent with anomaly and uncertainty flags")
+
     anomaly_rate = (
         production["is_anomaly"].mean()
     )
