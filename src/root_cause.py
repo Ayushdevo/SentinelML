@@ -61,14 +61,22 @@ def analyze_root_causes():
 
     shap_values = explainer.shap_values(X)
 
-    # Compatibility with different SHAP versions
+    # Select the positive churn class in the model's declared class order.
+    classes = list(getattr(model, "classes_", (0, 1)))
+    if len(classes) != 2 or set(classes) != {0, 1}:
+        raise ValueError("Root-cause model must expose binary churn classes 0 and 1")
+    positive_index = classes.index(1)
     if isinstance(shap_values, list):
-        shap_values = shap_values[-1]
+        if len(shap_values) != len(classes):
+            raise ValueError("SHAP class count does not match model classes")
+        shap_values = shap_values[positive_index]
 
     shap_values = np.asarray(shap_values)
     if shap_values.ndim == 3:
         # Multiclass explainers return (rows, features, classes).
-        shap_values = shap_values[:, :, 1]
+        if shap_values.shape[2] != len(classes):
+            raise ValueError("SHAP class count does not match model classes")
+        shap_values = shap_values[:, :, positive_index]
     if shap_values.shape != (len(X), len(features)):
         raise ValueError(
             f"Unexpected SHAP shape {shap_values.shape}; expected {X.shape}"

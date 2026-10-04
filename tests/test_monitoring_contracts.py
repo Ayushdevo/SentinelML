@@ -61,3 +61,11 @@ def test_root_cause_rejects_invalid_features(tmp_path, monkeypatch, value):
     setup_root(tmp_path, monkeypatch, pd.DataFrame({"signal": [value], "prediction_risk": ["LOW"]}), np.ones((1, 1)))
     with pytest.raises(ValueError, match="features"):
         root_cause.analyze_root_causes()
+
+
+@pytest.mark.parametrize("as_list", [True, False])
+def test_root_cause_selects_positive_class_in_reversed_order(tmp_path, monkeypatch, as_list):
+    values = [np.array([[2.]]), np.array([[0.]])] if as_list else np.array([[[2., 0.]]])
+    setup_root(tmp_path, monkeypatch, pd.DataFrame({"signal": [1.], "prediction_risk": ["HIGH"]}), values, classes=(1, 0))
+    root_cause.analyze_root_causes()
+    assert json.loads((tmp_path / "out.json").read_text())["global_feature_importance"]["signal"] == 100
