@@ -32,3 +32,9 @@ def setup_health(tmp_path, monkeypatch, row, drift=None):
 def test_psi_rejects_nonvector_samples(sample):
     with pytest.raises(ValueError, match="one-dimensional"):
         drift_detector.calculate_psi(sample, [1., 2.])
+
+
+@pytest.mark.parametrize("psi, p", [(np.nan, .5), (-.1, .5), (.1, np.inf), (.1, -1), (.1, 2)])
+def test_drift_classification_rejects_invalid_statistics(psi, p):
+    with pytest.raises(ValueError):
+        drift_detector.classify_drift(psi, p)

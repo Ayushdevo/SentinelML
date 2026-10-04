@@ -90,6 +90,11 @@ def classify_drift(psi, p_value):
     Combine PSI magnitude with KS statistical significance.
     """
 
+    if not np.isfinite(psi) or psi < 0:
+        raise ValueError("PSI must be finite and nonnegative")
+    if not np.isfinite(p_value) or not 0 <= p_value <= 1:
+        raise ValueError("KS p-value must be finite and between zero and one")
+
     if psi >= 0.25:
         return "HIGH"
 
