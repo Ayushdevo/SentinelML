@@ -49,6 +49,9 @@ def train():
         random_state=42,
     )
 
+    if set(y_train.unique()) != {0, 1} or set(y_test.unique()) != {0, 1}:
+        raise ValueError("Both training and evaluation splits must contain both binary classes")
+
     model = XGBClassifier(
         n_estimators=300,
         max_depth=5,

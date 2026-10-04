@@ -38,3 +38,11 @@ def test_psi_rejects_nonvector_samples(sample):
 def test_drift_classification_rejects_invalid_statistics(psi, p):
     with pytest.raises(ValueError):
         drift_detector.classify_drift(psi, p)
+
+
+def test_training_rejects_split_without_positive_evaluation_class(tmp_path, monkeypatch):
+    path = tmp_path / "reference.csv"
+    pd.DataFrame({"signal": range(100), "churn": [0] * 98 + [1] * 2}).to_csv(path, index=False)
+    monkeypatch.setattr(training, "DATA_PATH", path)
+    with pytest.raises(ValueError, match="evaluation splits"):
+        training.train()
