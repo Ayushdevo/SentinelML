@@ -75,3 +75,11 @@ def test_health_rejects_risk_label_that_disagrees_with_flags(tmp_path, monkeypat
     setup_health(tmp_path, monkeypatch, {"is_anomaly": 1, "high_uncertainty": 1, "prediction_risk": "LOW"})
     with pytest.raises(ValueError, match="inconsistent"):
         retraining_engine.calculate_health()
+
+
+@pytest.mark.parametrize("count, listed", [(2, []), (0, ["signal"]), (True, []), (1, ["missing"])])
+def test_health_rejects_inconsistent_drift_summary(tmp_path, monkeypatch, count, listed):
+    drift = {"features": {"signal": {"status": "STABLE"}}, "drifted_features": listed, "number_of_drifted_features": count}
+    setup_health(tmp_path, monkeypatch, {"is_anomaly": 0, "high_uncertainty": 0, "prediction_risk": "LOW"}, drift)
+    with pytest.raises(ValueError, match="Drift report"):
+        retraining_engine.calculate_health()

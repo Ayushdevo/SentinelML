@@ -72,6 +72,14 @@ def calculate_health():
         drift_report["features"]
     )
 
+    listed = drift_report["drifted_features"]
+    expected_drifted = {name for name, values in drift_report["features"].items() if values.get("status") in {"MODERATE", "HIGH"}}
+    if (not total_features or isinstance(drifted_features, bool)
+        or not isinstance(drifted_features, int)
+        or drifted_features != len(listed) or len(set(listed)) != len(listed)
+        or set(listed) != expected_drifted):
+        raise ValueError("Drift report counts and feature statuses are inconsistent")
+
     drift_ratio = (
         drifted_features / total_features
         if total_features
