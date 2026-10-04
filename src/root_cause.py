@@ -48,6 +48,10 @@ def analyze_root_causes():
         raise ValueError("Production prediction_risk must contain valid risk labels")
 
     X = production[features]
+    if not features or not all(pd.api.types.is_numeric_dtype(dtype) for dtype in X.dtypes):
+        raise ValueError("Root-cause features must be numeric and nonempty")
+    if not np.isfinite(X.to_numpy(dtype=float)).all():
+        raise ValueError("Root-cause features must be finite")
 
     # --------------------------------
     # 1. SHAP Tree Explainer
