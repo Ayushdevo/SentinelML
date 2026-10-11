@@ -5,6 +5,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import shap
+from src.model_contracts import positive_class_index
 
 
 MODEL_PATH = Path("models/baseline_model.joblib")
@@ -31,6 +32,7 @@ def analyze_root_causes():
     print("=" * 60)
 
     model = joblib.load(MODEL_PATH)
+    positive_index = positive_class_index(model)
     production = pd.read_csv(PRODUCTION_PATH)
 
     features = [
@@ -62,19 +64,15 @@ def analyze_root_causes():
     shap_values = explainer.shap_values(X)
 
     # Select the positive churn class in the model's declared class order.
-    classes = list(getattr(model, "classes_", (0, 1)))
-    if len(classes) != 2 or set(classes) != {0, 1}:
-        raise ValueError("Root-cause model must expose binary churn classes 0 and 1")
-    positive_index = classes.index(1)
     if isinstance(shap_values, list):
-        if len(shap_values) != len(classes):
+        if len(shap_values) != 2:
             raise ValueError("SHAP class count does not match model classes")
         shap_values = shap_values[positive_index]
 
     shap_values = np.asarray(shap_values)
     if shap_values.ndim == 3:
         # Multiclass explainers return (rows, features, classes).
-        if shap_values.shape[2] != len(classes):
+        if shap_values.shape[2] != 2:
             raise ValueError("SHAP class count does not match model classes")
         shap_values = shap_values[:, :, positive_index]
     if shap_values.shape != (len(X), len(features)):

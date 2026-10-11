@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
+from src.model_contracts import positive_class_index
 
 
 REFERENCE_PATH = Path("data/reference.csv")
@@ -19,6 +20,7 @@ def analyze_production():
     reference = pd.read_csv(REFERENCE_PATH)
     production = pd.read_csv(PRODUCTION_PATH)
     model = joblib.load(MODEL_PATH)
+    positive_index = positive_class_index(model)
 
     features = list(model.feature_names_in_) if hasattr(model, "feature_names_in_") else [
         column for column in reference.columns if column != TARGET
@@ -76,18 +78,15 @@ def analyze_production():
     # ----------------------------
     # 3. Model predictions
     # ----------------------------
-    classes = list(getattr(model, "classes_", (0, 1)))
-    if len(classes) != 2 or 1 not in classes:
-        raise ValueError("Churn model must have a positive class labeled 1")
     class_probabilities = np.asarray(model.predict_proba(X_production), dtype=float)
     if (
-        class_probabilities.shape != (len(production), len(classes))
+        class_probabilities.shape != (len(production), 2)
         or not np.isfinite(class_probabilities).all()
         or np.any((class_probabilities < 0) | (class_probabilities > 1))
         or not np.allclose(class_probabilities.sum(axis=1), 1.0, rtol=0, atol=1e-6)
     ):
         raise ValueError("Model returned invalid class probabilities")
-    probabilities = class_probabilities[:, classes.index(1)]
+    probabilities = class_probabilities[:, positive_index]
 
     predictions = (
         probabilities >= 0.5
