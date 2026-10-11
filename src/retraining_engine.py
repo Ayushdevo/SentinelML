@@ -64,20 +64,24 @@ def calculate_health():
         .mean()
     )
 
-    drifted_features = (
-        drift_report["number_of_drifted_features"]
-    )
-
-    total_features = len(
-        drift_report["features"]
-    )
-
-    listed = drift_report["drifted_features"]
-    expected_drifted = {name for name, values in drift_report["features"].items() if values.get("status") in {"MODERATE", "HIGH"}}
-    if (not total_features or isinstance(drifted_features, bool)
+    features = drift_report.get("features") if isinstance(drift_report, dict) else None
+    listed = drift_report.get("drifted_features") if isinstance(drift_report, dict) else None
+    if (not isinstance(features, dict) or not features
+        or not isinstance(listed, list)
+        or not all(isinstance(name, str) for name in listed)
+        or not all(isinstance(values, dict) and isinstance(values.get("status"), str)
+                   and values.get("status") in {"STABLE", "LOW", "MODERATE", "HIGH"}
+                   for values in features.values())):
+        raise ValueError("Drift report must contain valid feature statuses and a drifted-feature list")
+    drifted_features = drift_report.get("number_of_drifted_features")
+    total_features = len(features)
+    expected_drifted = {name for name, values in features.items() if values["status"] in {"MODERATE", "HIGH"}}
+    overall = drift_report.get("overall_drift_detected", bool(expected_drifted))
+    if (isinstance(drifted_features, bool)
         or not isinstance(drifted_features, int)
         or drifted_features != len(listed) or len(set(listed)) != len(listed)
-        or set(listed) != expected_drifted):
+        or set(listed) != expected_drifted
+        or not isinstance(overall, bool) or overall != bool(expected_drifted)):
         raise ValueError("Drift report counts and feature statuses are inconsistent")
 
     drift_ratio = (
