@@ -1,4 +1,6 @@
 import json
+import math
+from numbers import Real
 from pathlib import Path
 
 import pandas as pd
@@ -182,14 +184,26 @@ def calculate_health():
     # Root-cause summary
     # ---------------------------------
 
-    root_causes = (
-        root_cause_report
-        .get("high_risk_root_causes", {})
-    )
-
-    top_root_causes = dict(
-        list(root_causes.items())[:5]
-    )
+    if not isinstance(root_cause_report, dict):
+        raise ValueError("Root-cause report must be an object")
+    root_causes = root_cause_report.get("high_risk_root_causes", {})
+    if not isinstance(root_causes, dict):
+        raise ValueError("Root-cause contributions must be an object")
+    for contribution in root_causes.values():
+        if isinstance(contribution, bool) or not isinstance(contribution, Real):
+            raise ValueError("Root-cause contributions must be finite percentages between 0 and 100")
+        try:
+            valid = math.isfinite(contribution) and 0 <= contribution <= 100
+        except OverflowError:
+            valid = False
+        if not valid:
+            raise ValueError("Root-cause contributions must be finite percentages between 0 and 100")
+    if "high_risk_observations" in root_cause_report:
+        count = root_cause_report["high_risk_observations"]
+        if (isinstance(count, bool) or not isinstance(count, int)
+            or count != int(production["prediction_risk"].eq("HIGH").sum())):
+            raise ValueError("Root-cause observation count does not match production analysis")
+    top_root_causes = dict(sorted(root_causes.items(), key=lambda item: item[1], reverse=True)[:5])
 
     # ---------------------------------
     # Final report

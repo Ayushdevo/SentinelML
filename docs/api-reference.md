@@ -23,6 +23,8 @@ Readiness check for required runtime artifacts:
 - `models/model_health_report.json`
 
 Returns HTTP 503 with the missing artifact paths if either file is unavailable.
+Readiness also loads the model and checks that it supports probability
+prediction. Corrupt or incompatible artifacts return HTTP 503.
 
 ## `GET /health`
 
@@ -47,4 +49,7 @@ The response contains the binary prediction, churn probability, uncertainty scor
 
 ## Operational note
 
-The API assumes its model feature names are compatible with the request schema. A model trained with a different feature contract should not be deployed without updating and testing the API schema.
+Fitted feature names must match the request schema exactly; valid names are
+reordered into the fitted model's order. Incompatible feature names or churn
+class labels return HTTP 503. Churn classes must be numeric 0 and 1, and the
+positive probability is selected by class label rather than column position.
