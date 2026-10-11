@@ -1,4 +1,6 @@
 from fastapi.testclient import TestClient
+import joblib
+from sklearn.dummy import DummyClassifier
 
 from api import main
 
@@ -21,12 +23,16 @@ def test_readiness_lists_missing_artifacts(tmp_path, monkeypatch):
 def test_readiness_succeeds_when_required_artifacts_exist(tmp_path, monkeypatch):
     model_path = tmp_path / "model.joblib"
     health_path = tmp_path / "health.json"
-    model_path.write_bytes(b"placeholder")
+    joblib.dump(DummyClassifier().fit([[0], [1]], [0, 1]), model_path)
     health_path.write_text("{}", encoding="utf-8")
     monkeypatch.setattr(main, "MODEL_PATH", model_path)
     monkeypatch.setattr(main, "HEALTH_PATH", health_path)
 
-    response = TestClient(main.app).get("/ready")
+    main.load_model.cache_clear()
+    try:
+        response = TestClient(main.app).get("/ready")
+    finally:
+        main.load_model.cache_clear()
 
     assert response.status_code == 200
     assert response.json() == {"status": "ready"}

@@ -22,7 +22,13 @@ app = FastAPI(
 def load_model():
     if not MODEL_PATH.exists():
         raise HTTPException(status_code=503, detail="Baseline model is not available")
-    return joblib.load(MODEL_PATH)
+    try:
+        model = joblib.load(MODEL_PATH)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Baseline model is unreadable") from exc
+    if not callable(getattr(model, "predict_proba", None)):
+        raise HTTPException(status_code=503, detail="Baseline model does not support prediction")
+    return model
 
 
 class PredictionRequest(BaseModel):
@@ -74,6 +80,7 @@ def readiness():
         ) from exc
     if not isinstance(report, dict):
         raise HTTPException(status_code=503, detail="Invalid model health report")
+    load_model()
     return {"status": "ready"}
 
 
