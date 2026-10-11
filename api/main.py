@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
+from src.model_contracts import model_feature_order
 
 
 MODEL_PATH = Path("models/baseline_model.joblib")
@@ -102,8 +103,10 @@ def predict(data: PredictionRequest):
             }
         ]
     )
-    if hasattr(model, "feature_names_in_"):
-        input_df = input_df[list(model.feature_names_in_)]
+    try:
+        input_df = input_df[model_feature_order(model, input_df.columns)]
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     # Predictors may expose class probabilities in a nonstandard order.
     classes = list(getattr(model, "classes_", (0, 1)))
