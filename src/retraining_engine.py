@@ -1,4 +1,6 @@
 import json
+import math
+from numbers import Real
 from pathlib import Path
 
 import pandas as pd
@@ -64,20 +66,24 @@ def calculate_health():
         .mean()
     )
 
-    drifted_features = (
-        drift_report["number_of_drifted_features"]
-    )
-
-    total_features = len(
-        drift_report["features"]
-    )
-
-    listed = drift_report["drifted_features"]
-    expected_drifted = {name for name, values in drift_report["features"].items() if values.get("status") in {"MODERATE", "HIGH"}}
-    if (not total_features or isinstance(drifted_features, bool)
+    features = drift_report.get("features") if isinstance(drift_report, dict) else None
+    listed = drift_report.get("drifted_features") if isinstance(drift_report, dict) else None
+    if (not isinstance(features, dict) or not features
+        or not isinstance(listed, list)
+        or not all(isinstance(name, str) for name in listed)
+        or not all(isinstance(values, dict) and isinstance(values.get("status"), str)
+                   and values.get("status") in {"STABLE", "LOW", "MODERATE", "HIGH"}
+                   for values in features.values())):
+        raise ValueError("Drift report must contain valid feature statuses and a drifted-feature list")
+    drifted_features = drift_report.get("number_of_drifted_features")
+    total_features = len(features)
+    expected_drifted = {name for name, values in features.items() if values["status"] in {"MODERATE", "HIGH"}}
+    overall = drift_report.get("overall_drift_detected", bool(expected_drifted))
+    if (isinstance(drifted_features, bool)
         or not isinstance(drifted_features, int)
         or drifted_features != len(listed) or len(set(listed)) != len(listed)
-        or set(listed) != expected_drifted):
+        or set(listed) != expected_drifted
+        or not isinstance(overall, bool) or overall != bool(expected_drifted)):
         raise ValueError("Drift report counts and feature statuses are inconsistent")
 
     drift_ratio = (
@@ -178,14 +184,26 @@ def calculate_health():
     # Root-cause summary
     # ---------------------------------
 
-    root_causes = (
-        root_cause_report
-        .get("high_risk_root_causes", {})
-    )
-
-    top_root_causes = dict(
-        list(root_causes.items())[:5]
-    )
+    if not isinstance(root_cause_report, dict):
+        raise ValueError("Root-cause report must be an object")
+    root_causes = root_cause_report.get("high_risk_root_causes", {})
+    if not isinstance(root_causes, dict):
+        raise ValueError("Root-cause contributions must be an object")
+    for contribution in root_causes.values():
+        if isinstance(contribution, bool) or not isinstance(contribution, Real):
+            raise ValueError("Root-cause contributions must be finite percentages between 0 and 100")
+        try:
+            valid = math.isfinite(contribution) and 0 <= contribution <= 100
+        except OverflowError:
+            valid = False
+        if not valid:
+            raise ValueError("Root-cause contributions must be finite percentages between 0 and 100")
+    if "high_risk_observations" in root_cause_report:
+        count = root_cause_report["high_risk_observations"]
+        if (isinstance(count, bool) or not isinstance(count, int)
+            or count != int(production["prediction_risk"].eq("HIGH").sum())):
+            raise ValueError("Root-cause observation count does not match production analysis")
+    top_root_causes = dict(sorted(root_causes.items(), key=lambda item: item[1], reverse=True)[:5])
 
     # ---------------------------------
     # Final report

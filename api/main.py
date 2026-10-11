@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
+from src.model_contracts import model_feature_order, positive_class_index
 
 
 MODEL_PATH = Path("models/baseline_model.joblib")
@@ -22,7 +23,13 @@ app = FastAPI(
 def load_model():
     if not MODEL_PATH.exists():
         raise HTTPException(status_code=503, detail="Baseline model is not available")
-    return joblib.load(MODEL_PATH)
+    try:
+        model = joblib.load(MODEL_PATH)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Baseline model is unreadable") from exc
+    if not callable(getattr(model, "predict_proba", None)):
+        raise HTTPException(status_code=503, detail="Baseline model does not support prediction")
+    return model
 
 
 class PredictionRequest(BaseModel):
@@ -74,6 +81,7 @@ def readiness():
         ) from exc
     if not isinstance(report, dict):
         raise HTTPException(status_code=503, detail="Invalid model health report")
+    load_model()
     return {"status": "ready"}
 
 
@@ -95,16 +103,19 @@ def predict(data: PredictionRequest):
             }
         ]
     )
-    if hasattr(model, "feature_names_in_"):
-        input_df = input_df[list(model.feature_names_in_)]
+    try:
+        input_df = input_df[model_feature_order(model, input_df.columns)]
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     # Predictors may expose class probabilities in a nonstandard order.
-    classes = list(getattr(model, "classes_", (0, 1)))
-    if len(classes) != 2 or set(classes) != {0, 1}:
-        raise HTTPException(status_code=503, detail="Model must expose binary churn classes 0 and 1")
+    try:
+        positive_index = positive_class_index(model)
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     probabilities = np.asarray(model.predict_proba(input_df), dtype=float)
     if (
-        probabilities.shape != (1, len(classes))
+        probabilities.shape != (1, 2)
         or not np.isfinite(probabilities).all()
         or np.any((probabilities < 0) | (probabilities > 1))
         or not np.allclose(probabilities.sum(axis=1), 1.0, rtol=0, atol=1e-6)
@@ -112,7 +123,7 @@ def predict(data: PredictionRequest):
         raise HTTPException(
             status_code=503, detail="Model returned invalid probabilities"
         )
-    probability = float(probabilities[0, classes.index(1)])
+    probability = float(probabilities[0, positive_index])
 
     prediction = int(
         probability >= 0.5

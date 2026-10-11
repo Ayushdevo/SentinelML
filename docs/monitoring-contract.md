@@ -34,6 +34,13 @@ The health score is a heuristic monitoring score, not a direct estimate of real-
 
 A retraining recommendation means the model should be reviewed with labeled validation data. It does not authorize automatic deployment of a replacement model.
 
+Health generation rejects unknown drift statuses or conflicting drift summaries.
+Root-cause contributions must be finite percentages from 0 to 100. When a
+root-cause observation count is present, it must match the production HIGH-risk
+row count. The five displayed drivers are sorted by contribution, independent
+of the input JSON key order. Invalid reports do not overwrite the current health
+report.
+
 ## Compatibility
 
 Changes to thresholds, report field names, or risk semantics should be documented and covered by tests because dashboards and downstream consumers may rely on them.
