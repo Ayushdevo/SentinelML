@@ -30,6 +30,10 @@ Key generated artifacts include:
 - `models/root_cause_report.json`
 - `models/model_health_report.json`
 
+The dashboard's HIGH-risk observations section can export the displayed
+observations as CSV for offline review. The download is disabled when there
+are no HIGH-risk rows.
+
 ## Failure handling
 
 ### Only one dataset exists

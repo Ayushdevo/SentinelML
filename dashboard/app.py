@@ -281,6 +281,14 @@ st.dataframe(
     hide_index=True,
 )
 
+st.download_button(
+    "Download HIGH-risk observations",
+    data=high_risk[available_columns].to_csv(index=False).encode("utf-8"),
+    file_name="sentinelml-high-risk-observations.csv",
+    mime="text/csv",
+    disabled=high_risk.empty,
+)
+
 
 st.divider()
 
