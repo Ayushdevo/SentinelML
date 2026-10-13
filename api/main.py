@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 import logging
 from functools import lru_cache
+from numbers import Real
 
 import joblib
 import numpy as np
@@ -14,6 +15,8 @@ from src.model_contracts import model_feature_order, positive_class_index
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MODEL_PATH = PROJECT_ROOT / "models" / "baseline_model.joblib"
 HEALTH_PATH = PROJECT_ROOT / "models" / "model_health_report.json"
+METRICS_PATH = PROJECT_ROOT / "models" / "baseline_metrics.json"
+BASELINE_METRIC_NAMES = {"accuracy", "precision", "recall", "f1", "roc_auc"}
 
 app = FastAPI(
     title="SentinelML API",
@@ -78,6 +81,33 @@ def model_health():
         raise HTTPException(status_code=503, detail="Invalid model health report")
 
     return health
+
+
+@app.get("/metrics")
+def baseline_metrics():
+    if not METRICS_PATH.exists():
+        raise HTTPException(status_code=503, detail="Baseline metrics are not available")
+    try:
+        with open(METRICS_PATH, "r", encoding="utf-8") as file:
+            metrics = json.load(file)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=503, detail="Baseline metrics are unreadable"
+        ) from exc
+
+    if (
+        not isinstance(metrics, dict)
+        or set(metrics) != BASELINE_METRIC_NAMES
+        or any(
+            isinstance(value, bool)
+            or not isinstance(value, Real)
+            or not np.isfinite(value)
+            or not 0 <= value <= 1
+            for value in metrics.values()
+        )
+    ):
+        raise HTTPException(status_code=503, detail="Invalid baseline metrics report")
+    return metrics
 
 
 @app.get("/ready")

@@ -32,6 +32,13 @@ Returns the current model-health report. The endpoint returns HTTP 503 when
 the report has not been generated, cannot be read, or does not contain a JSON
 object.
 
+## `GET /metrics`
+
+Returns the held-out baseline model metrics (`accuracy`, `precision`, `recall`,
+`f1`, and `roc_auc`). Values are fractions from 0 to 1. Returns HTTP 503 when
+the metrics artifact is missing, unreadable, or invalid. These are training
+evaluation metrics, not live production performance.
+
 ## `POST /predict`
 
 Required numeric fields:

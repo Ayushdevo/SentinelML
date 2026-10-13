@@ -49,6 +49,48 @@ def test_nonobject_health_report_returns_503(tmp_path, monkeypatch, contents):
     assert response.json()["detail"] == "Invalid model health report"
 
 
+def test_baseline_metrics_returns_valid_training_metrics(tmp_path, monkeypatch):
+    report = tmp_path / "baseline_metrics.json"
+    report.write_text(
+        '{"accuracy": 0.9, "precision": 0.8, "recall": 0.7, "f1": 0.75, "roc_auc": 0.95}',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(main, "METRICS_PATH", report)
+
+    response = TestClient(main.app).get("/metrics")
+
+    assert response.status_code == 200
+    assert response.json()["accuracy"] == 0.9
+    assert response.json()["roc_auc"] == 0.95
+
+
+@pytest.mark.parametrize(
+    "contents",
+    [
+        '{"accuracy": 0.9}',
+        '{"accuracy": true, "precision": 0.8, "recall": 0.7, "f1": 0.75, "roc_auc": 0.95}',
+        '{"accuracy": 1.1, "precision": 0.8, "recall": 0.7, "f1": 0.75, "roc_auc": 0.95}',
+        '[]',
+    ],
+)
+def test_invalid_baseline_metrics_returns_503(tmp_path, monkeypatch, contents):
+    report = tmp_path / "baseline_metrics.json"
+    report.write_text(contents, encoding="utf-8")
+    monkeypatch.setattr(main, "METRICS_PATH", report)
+
+    response = TestClient(main.app).get("/metrics")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Invalid baseline metrics report"
+
+
+def test_missing_baseline_metrics_returns_503(tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "METRICS_PATH", tmp_path / "missing.json")
+    response = TestClient(main.app).get("/metrics")
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Baseline metrics are not available"
+
+
 def test_predict_uses_label_one_when_model_class_order_is_reversed(monkeypatch):
     import numpy as np
 
