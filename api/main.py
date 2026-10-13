@@ -7,7 +7,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from src.model_contracts import model_feature_order, positive_class_index
 
 
@@ -48,6 +48,11 @@ class PredictionRequest(BaseModel):
     contract_score: float
     engagement_score: float
     service_count: float
+
+
+class PredictionBatchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    predictions: list[PredictionRequest] = Field(min_length=1, max_length=100)
 
 
 @app.get("/")
@@ -95,22 +100,18 @@ def readiness():
 
 @app.post("/predict")
 def predict(data: PredictionRequest):
+    return _predict_records([data])[0]
+
+
+@app.post("/predict/batch")
+def predict_batch(data: PredictionBatchRequest):
+    return {"predictions": _predict_records(data.predictions)}
+
+
+def _predict_records(records: list[PredictionRequest]):
     model = load_model()
 
-    input_df = pd.DataFrame(
-        [
-            {
-                "tenure": data.tenure,
-                "monthly_charges": data.monthly_charges,
-                "usage_hours": data.usage_hours,
-                "support_calls": data.support_calls,
-                "late_payments": data.late_payments,
-                "contract_score": data.contract_score,
-                "engagement_score": data.engagement_score,
-                "service_count": data.service_count,
-            }
-        ]
-    )
+    input_df = pd.DataFrame([record.model_dump() for record in records])
     try:
         input_df = input_df[model_feature_order(model, input_df.columns)]
     except ValueError as exc:
@@ -127,7 +128,7 @@ def predict(data: PredictionRequest):
         logger.exception("Model prediction failed")
         raise HTTPException(status_code=503, detail="Model prediction failed") from exc
     if (
-        probabilities.shape != (1, 2)
+        probabilities.shape != (len(records), 2)
         or not np.isfinite(probabilities).all()
         or np.any((probabilities < 0) | (probabilities > 1))
         or not np.allclose(probabilities.sum(axis=1), 1.0, rtol=0, atol=1e-6)
@@ -135,30 +136,19 @@ def predict(data: PredictionRequest):
         raise HTTPException(
             status_code=503, detail="Model returned invalid probabilities"
         )
-    probability = float(probabilities[0, positive_index])
-
-    prediction = int(
-        probability >= 0.5
-    )
-
-    uncertainty = float(
-        1 - abs(probability - 0.5) * 2
-    )
-
-    if uncertainty >= 0.60:
-        risk = "HIGH_UNCERTAINTY"
-    else:
-        risk = "NORMAL"
-
-    return {
-        "prediction": prediction,
-        "churn_probability": round(
-            probability,
-            4,
-        ),
-        "uncertainty": round(
-            uncertainty,
-            4,
-        ),
-        "prediction_risk": risk,
-    }
+    results = []
+    for probability in probabilities[:, positive_index]:
+        probability = float(probability)
+        prediction = int(probability >= 0.5)
+        uncertainty = float(1 - abs(probability - 0.5) * 2)
+        results.append(
+            {
+                "prediction": prediction,
+                "churn_probability": round(probability, 4),
+                "uncertainty": round(uncertainty, 4),
+                "prediction_risk": (
+                    "HIGH_UNCERTAINTY" if uncertainty >= 0.60 else "NORMAL"
+                ),
+            }
+        )
+    return results

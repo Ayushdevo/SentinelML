@@ -101,3 +101,50 @@ def test_prediction_runtime_failure_returns_503_and_is_logged(monkeypatch, caplo
     assert response.status_code == 503
     assert response.json()["detail"] == "Model prediction failed"
     assert "Model prediction failed" in caplog.text
+
+
+def test_batch_prediction_preserves_order_and_returns_single_prediction_shapes(monkeypatch):
+    import numpy as np
+
+    class BatchModel:
+        classes_ = [0, 1]
+
+        def predict_proba(self, frame):
+            assert len(frame) == 2
+            return np.array([[0.1, 0.9], [0.8, 0.2]])
+
+    monkeypatch.setattr(main, "load_model", lambda: BatchModel())
+    record = dict.fromkeys(main.PredictionRequest.model_fields, 1.0)
+
+    response = TestClient(main.app).post(
+        "/predict/batch",
+        json={"predictions": [record, record]},
+    )
+
+    assert response.status_code == 200
+    results = response.json()["predictions"]
+    assert len(results) == 2
+    assert results[0]["churn_probability"] == 0.9
+    assert results[0]["prediction"] == 1
+    assert results[1]["churn_probability"] == 0.2
+    assert results[1]["prediction"] == 0
+    assert all(set(result) == {
+        "prediction", "churn_probability", "uncertainty", "prediction_risk"
+    } for result in results)
+
+
+@pytest.mark.parametrize("predictions", [[], [dict.fromkeys(main.PredictionRequest.model_fields, 1.0)] * 101])
+def test_batch_prediction_enforces_request_size_before_loading_model(
+    predictions, monkeypatch
+):
+    def fail_load():
+        raise AssertionError("Invalid batches must be rejected before model loading")
+
+    monkeypatch.setattr(main, "load_model", fail_load)
+
+    response = TestClient(main.app).post(
+        "/predict/batch",
+        json={"predictions": predictions},
+    )
+
+    assert response.status_code == 422

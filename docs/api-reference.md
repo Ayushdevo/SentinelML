@@ -49,6 +49,12 @@ Unknown fields are rejected. NaN and infinite values are rejected by request val
 
 The response contains the binary prediction, churn probability, uncertainty score, and a prediction-risk label.
 
+## `POST /predict/batch`
+
+Accepts a `predictions` array containing between 1 and 100 objects with the
+same fields and validation rules as `POST /predict`. Returns a `predictions`
+array of per-record prediction responses in the same order as the request.
+
 ## Operational note
 
 Fitted feature names must match the request schema exactly; valid names are
