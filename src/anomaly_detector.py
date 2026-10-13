@@ -8,10 +8,11 @@ from sklearn.preprocessing import StandardScaler
 from src.model_contracts import positive_class_index
 
 
-REFERENCE_PATH = Path("data/reference.csv")
-PRODUCTION_PATH = Path("data/production.csv")
-MODEL_PATH = Path("models/baseline_model.joblib")
-OUTPUT_PATH = Path("models/production_analysis.csv")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+REFERENCE_PATH = PROJECT_ROOT / "data" / "reference.csv"
+PRODUCTION_PATH = PROJECT_ROOT / "data" / "production.csv"
+MODEL_PATH = PROJECT_ROOT / "models" / "baseline_model.joblib"
+OUTPUT_PATH = PROJECT_ROOT / "models" / "production_analysis.csv"
 
 TARGET = "churn"
 

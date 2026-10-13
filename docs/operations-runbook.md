@@ -8,6 +8,10 @@ Run from the repository root:
 python -m src.run_pipeline
 ```
 
+Runtime artifact paths are resolved from the project files, so the API and
+dashboard continue to find model and report files when launched from another
+working directory.
+
 The pipeline performs:
 
 1. dataset generation when both source datasets are absent

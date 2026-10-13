@@ -5,7 +5,6 @@ from src.root_cause import analyze_root_causes
 from src.retraining_engine import calculate_health
 from src.train import train
 
-import pandas as pd
 from pathlib import Path
 
 
@@ -16,9 +15,10 @@ def main():
     print("=" * 60)
 
     # Only regenerate data if files do not exist
-    reference_path = Path("data/reference.csv")
-    production_path = Path("data/production.csv")
-    model_path = Path("models/baseline_model.joblib")
+    project_root = Path(__file__).resolve().parents[1]
+    reference_path = project_root / "data" / "reference.csv"
+    production_path = project_root / "data" / "production.csv"
+    model_path = project_root / "models" / "baseline_model.joblib"
 
     if reference_path.exists() != production_path.exists():
         raise FileNotFoundError(

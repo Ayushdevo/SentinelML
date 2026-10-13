@@ -11,10 +11,11 @@ st.set_page_config(
     layout="wide",
 )
 
-HEALTH_PATH = Path("models/model_health_report.json")
-DRIFT_PATH = Path("models/drift_report.json")
-ROOT_CAUSE_PATH = Path("models/root_cause_report.json")
-PRODUCTION_PATH = Path("models/production_analysis.csv")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+HEALTH_PATH = PROJECT_ROOT / "models" / "model_health_report.json"
+DRIFT_PATH = PROJECT_ROOT / "models" / "drift_report.json"
+ROOT_CAUSE_PATH = PROJECT_ROOT / "models" / "root_cause_report.json"
+PRODUCTION_PATH = PROJECT_ROOT / "models" / "production_analysis.csv"
 
 
 def load_json(path):

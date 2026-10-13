@@ -8,9 +8,10 @@ import shap
 from src.model_contracts import positive_class_index
 
 
-MODEL_PATH = Path("models/baseline_model.joblib")
-PRODUCTION_PATH = Path("models/production_analysis.csv")
-OUTPUT_PATH = Path("models/root_cause_report.json")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+MODEL_PATH = PROJECT_ROOT / "models" / "baseline_model.joblib"
+PRODUCTION_PATH = PROJECT_ROOT / "models" / "production_analysis.csv"
+OUTPUT_PATH = PROJECT_ROOT / "models" / "root_cause_report.json"
 
 TARGET = "churn"
 

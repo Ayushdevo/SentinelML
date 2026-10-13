@@ -6,10 +6,11 @@ from pathlib import Path
 import pandas as pd
 
 
-DRIFT_PATH = Path("models/drift_report.json")
-ROOT_CAUSE_PATH = Path("models/root_cause_report.json")
-PRODUCTION_PATH = Path("models/production_analysis.csv")
-OUTPUT_PATH = Path("models/model_health_report.json")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DRIFT_PATH = PROJECT_ROOT / "models" / "drift_report.json"
+ROOT_CAUSE_PATH = PROJECT_ROOT / "models" / "root_cause_report.json"
+PRODUCTION_PATH = PROJECT_ROOT / "models" / "production_analysis.csv"
+OUTPUT_PATH = PROJECT_ROOT / "models" / "model_health_report.json"
 
 
 def load_json(path):

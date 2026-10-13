@@ -5,7 +5,8 @@ from sklearn.datasets import make_classification
 
 
 RANDOM_STATE = 42
-DATA_DIR = Path("data")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = PROJECT_ROOT / "data"
 
 
 def build_dataset(n_samples=10000):

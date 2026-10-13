@@ -16,8 +16,9 @@ from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 
 
-DATA_PATH = Path("data/reference.csv")
-MODEL_DIR = Path("models")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_PATH = PROJECT_ROOT / "data" / "reference.csv"
+MODEL_DIR = PROJECT_ROOT / "models"
 
 TARGET = "churn"
 

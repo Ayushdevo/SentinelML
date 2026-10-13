@@ -7,9 +7,10 @@ import pandas as pd
 from scipy.stats import ks_2samp
 
 
-REFERENCE_PATH = Path("data/reference.csv")
-PRODUCTION_PATH = Path("data/production.csv")
-OUTPUT_PATH = Path("models/drift_report.json")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+REFERENCE_PATH = PROJECT_ROOT / "data" / "reference.csv"
+PRODUCTION_PATH = PROJECT_ROOT / "data" / "production.csv"
+OUTPUT_PATH = PROJECT_ROOT / "models" / "drift_report.json"
 
 TARGET = "churn"
 

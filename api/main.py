@@ -10,8 +10,9 @@ from pydantic import BaseModel, ConfigDict
 from src.model_contracts import model_feature_order, positive_class_index
 
 
-MODEL_PATH = Path("models/baseline_model.joblib")
-HEALTH_PATH = Path("models/model_health_report.json")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+MODEL_PATH = PROJECT_ROOT / "models" / "baseline_model.joblib"
+HEALTH_PATH = PROJECT_ROOT / "models" / "model_health_report.json"
 
 app = FastAPI(
     title="SentinelML API",
