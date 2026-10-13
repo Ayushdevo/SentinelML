@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pytest
 import pandas as pd
@@ -67,3 +69,32 @@ def test_drift_fails_clearly_when_feature_type_changes(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="signal.*numeric"):
         drift_detector.detect_drift()
     assert not (tmp_path / "drift.json").exists()
+
+
+def test_drift_rejects_unexpected_production_columns(tmp_path, monkeypatch):
+    reference = pd.DataFrame({"signal": [1.0, 2.0], "churn": [0, 1]})
+    production = pd.DataFrame({"signal": [1.0, 2.0], "unexpected": [3.0, 4.0]})
+    reference.to_csv(tmp_path / "reference.csv", index=False)
+    production.to_csv(tmp_path / "production.csv", index=False)
+    monkeypatch.setattr(drift_detector, "REFERENCE_PATH", tmp_path / "reference.csv")
+    monkeypatch.setattr(drift_detector, "PRODUCTION_PATH", tmp_path / "production.csv")
+    monkeypatch.setattr(drift_detector, "OUTPUT_PATH", tmp_path / "drift.json")
+
+    with pytest.raises(ValueError, match="unexpected columns: unexpected"):
+        drift_detector.detect_drift()
+    assert not (tmp_path / "drift.json").exists()
+
+
+def test_drift_accepts_optional_production_target_column(tmp_path, monkeypatch):
+    reference = pd.DataFrame({"signal": [1.0, 2.0], "churn": [0, 1]})
+    production = pd.DataFrame({"signal": [1.0, 2.0], "churn": [1, 0]})
+    reference.to_csv(tmp_path / "reference.csv", index=False)
+    production.to_csv(tmp_path / "production.csv", index=False)
+    monkeypatch.setattr(drift_detector, "REFERENCE_PATH", tmp_path / "reference.csv")
+    monkeypatch.setattr(drift_detector, "PRODUCTION_PATH", tmp_path / "production.csv")
+    monkeypatch.setattr(drift_detector, "OUTPUT_PATH", tmp_path / "drift.json")
+
+    drift_detector.detect_drift()
+
+    report = json.loads((tmp_path / "drift.json").read_text())
+    assert list(report["features"]) == ["signal"]

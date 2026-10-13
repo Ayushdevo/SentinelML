@@ -144,6 +144,11 @@ def detect_drift():
     missing = sorted(set(features) - set(production.columns))
     if missing:
         raise ValueError(f"Production data is missing features: {', '.join(missing)}")
+    unexpected = sorted(set(production.columns) - set(features) - {TARGET})
+    if unexpected:
+        raise ValueError(
+            f"Production data contains unexpected columns: {', '.join(unexpected)}"
+        )
 
     feature_statistics = {}
 

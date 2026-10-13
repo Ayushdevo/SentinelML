@@ -16,6 +16,9 @@ Current PSI interpretation:
 - `PSI >= 0.25`: high drift
 
 A missing-value-rate shift of at least 10 percentage points upgrades otherwise stable/low drift to moderate.
+Production data must contain every reference feature and may contain the
+target column, but any other unexpected columns are rejected before a report
+is written.
 
 ## Prediction-level risk
 
