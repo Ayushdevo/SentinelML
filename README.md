@@ -364,6 +364,8 @@ sentinel-ml/
 
 # ⚙️ Installation
 
+The CI workflow runs the test suite with Python 3.12, 3.13, and 3.14.
+
 Clone the repository:
 
 ```bash
