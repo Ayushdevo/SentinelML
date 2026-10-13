@@ -5,6 +5,9 @@ This document defines the current meaning of SentinelML monitoring outputs.
 ## Drift
 
 Feature drift combines Population Stability Index (PSI) with a Kolmogorov-Smirnov test.
+KS p-values are corrected across all monitored features with the Holm
+family-wise error procedure. Reports retain both the raw `p_value` and
+`adjusted_p_value`; drift classification uses the adjusted value.
 
 Current PSI interpretation:
 

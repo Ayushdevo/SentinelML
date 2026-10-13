@@ -3,7 +3,7 @@ import pytest
 import pandas as pd
 
 from src import drift_detector
-from src.drift_detector import calculate_psi
+from src.drift_detector import adjust_p_values_holm, calculate_psi
 
 
 def test_identical_constant_populations_have_zero_drift():
@@ -36,12 +36,24 @@ def test_missingness_shift_is_reported_even_with_stable_values(tmp_path, monkeyp
     assert report["overall_drift_detected"] is True
     assert report["features"]["signal"]["status"] == "MODERATE"
     assert report["features"]["signal"]["production_count"] == 20
+    assert report["features"]["signal"]["adjusted_p_value"] == report["features"]["signal"]["p_value"]
 
 
 @pytest.mark.parametrize("bins", [0, 1, 2.5, True, "10"])
 def test_psi_rejects_noninteger_or_too_few_bins(bins):
     with pytest.raises(ValueError, match="PSI bins"):
         calculate_psi([1.0, 2.0], [2.0, 3.0], bins=bins)
+
+
+def test_holm_adjustment_controls_familywise_false_positives():
+    assert adjust_p_values_holm([0.01, 0.04, 0.03]) == pytest.approx(
+        [0.03, 0.06, 0.06]
+    )
+
+
+def test_holm_adjustment_rejects_invalid_p_values():
+    with pytest.raises(ValueError, match="KS p-values"):
+        adjust_p_values_holm([0.01, np.nan])
 
 
 def test_drift_fails_clearly_when_feature_type_changes(tmp_path, monkeypatch):

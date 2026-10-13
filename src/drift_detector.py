@@ -108,6 +108,26 @@ def classify_drift(psi, p_value):
     return "STABLE"
 
 
+def adjust_p_values_holm(p_values):
+    p_values = np.asarray(p_values, dtype=float)
+    if (
+        p_values.ndim != 1
+        or not np.isfinite(p_values).all()
+        or np.any((p_values < 0) | (p_values > 1))
+    ):
+        raise ValueError("KS p-values must be a one-dimensional sequence between zero and one")
+    if not len(p_values):
+        return []
+
+    order = np.argsort(p_values)
+    adjusted = np.empty(len(p_values), dtype=float)
+    previous = 0.0
+    for rank, index in enumerate(order):
+        previous = max(previous, min(1.0, (len(p_values) - rank) * p_values[index]))
+        adjusted[index] = previous
+    return adjusted.tolist()
+
+
 def detect_drift():
     reference = pd.read_csv(REFERENCE_PATH)
     production = pd.read_csv(PRODUCTION_PATH)
@@ -125,7 +145,7 @@ def detect_drift():
     if missing:
         raise ValueError(f"Production data is missing features: {', '.join(missing)}")
 
-    report = {}
+    feature_statistics = {}
 
     print("\nSENTINELML — DRIFT ANALYSIS")
     print("=" * 72)
@@ -134,7 +154,7 @@ def detect_drift():
         f"{'Feature':22}"
         f"{'PSI':>10}"
         f"{'KS':>10}"
-        f"{'p-value':>14}"
+        f"{'Holm p-value':>14}"
         f"{'Status':>14}"
     )
 
@@ -162,35 +182,50 @@ def detect_drift():
             prod_values,
         )
 
-        status = classify_drift(
-            psi,
-            p_value,
-        )
         missing_shift = abs(
             reference[feature].isna().mean() - production[feature].isna().mean()
         )
+        feature_statistics[feature] = {
+            "reference_count": int(len(ref_values)),
+            "production_count": int(len(prod_values)),
+            "reference_missing_rate": float(reference[feature].isna().mean()),
+            "production_missing_rate": float(production[feature].isna().mean()),
+            "missing_rate_shift": float(missing_shift),
+            "psi": float(psi),
+            "ks_statistic": float(ks_statistic),
+            "p_value": float(p_value),
+        }
+
+    adjusted_p_values = adjust_p_values_holm(
+        [values["p_value"] for values in feature_statistics.values()]
+    )
+    report = {}
+    for (feature, values), adjusted_p_value in zip(
+        feature_statistics.items(), adjusted_p_values
+    ):
+        status = classify_drift(values["psi"], adjusted_p_value)
+        missing_shift = values["missing_rate_shift"]
         if missing_shift >= 0.10 and status in {"STABLE", "LOW"}:
             status = "MODERATE"
 
         report[feature] = {
-            "reference_count": int(len(ref_values)),
-            "production_count": int(len(prod_values)),
-            "reference_missing_rate": round(float(reference[feature].isna().mean()), 6),
-            "production_missing_rate": round(float(production[feature].isna().mean()), 6),
+            "reference_count": values["reference_count"],
+            "production_count": values["production_count"],
+            "reference_missing_rate": round(values["reference_missing_rate"], 6),
+            "production_missing_rate": round(values["production_missing_rate"], 6),
             "missing_rate_shift": round(float(missing_shift), 6),
-            "psi": round(float(psi), 6),
-            "ks_statistic": round(
-                float(ks_statistic), 6
-            ),
-            "p_value": float(p_value),
+            "psi": round(values["psi"], 6),
+            "ks_statistic": round(values["ks_statistic"], 6),
+            "p_value": values["p_value"],
+            "adjusted_p_value": adjusted_p_value,
             "status": status,
         }
 
         print(
             f"{feature:22}"
-            f"{psi:>10.4f}"
-            f"{ks_statistic:>10.4f}"
-            f"{p_value:>14.6f}"
+            f"{values['psi']:>10.4f}"
+            f"{values['ks_statistic']:>10.4f}"
+            f"{adjusted_p_value:>14.6f}"
             f"{status:>14}"
         )
 
