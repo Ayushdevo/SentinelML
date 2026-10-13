@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 import joblib
@@ -14,6 +13,8 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
+
+from src.artifacts import write_json_atomic
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -90,12 +91,7 @@ def train():
     model.get_booster().save_model(
         MODEL_DIR / "baseline_model.json"
     )
-    with open(
-        MODEL_DIR / "baseline_metrics.json",
-        "w",
-        encoding="utf-8",
-    ) as file:
-        json.dump(metrics, file, indent=4)
+    write_json_atomic(MODEL_DIR / "baseline_metrics.json", metrics)
 
     print("\nSentinelML baseline model trained\n")
 

@@ -1,10 +1,10 @@
-import json
 from numbers import Integral
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from scipy.stats import ks_2samp
+from src.artifacts import write_json_atomic
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -251,18 +251,7 @@ def detect_drift():
         "features": report,
     }
 
-    OUTPUT_PATH.parent.mkdir(exist_ok=True)
-
-    with open(
-        OUTPUT_PATH,
-        "w",
-        encoding="utf-8",
-    ) as file:
-        json.dump(
-            final_report,
-            file,
-            indent=4,
-        )
+    write_json_atomic(OUTPUT_PATH, final_report)
 
     print("=" * 72)
 

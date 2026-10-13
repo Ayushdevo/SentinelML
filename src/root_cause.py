@@ -1,10 +1,10 @@
 from pathlib import Path
-import json
 
 import joblib
 import numpy as np
 import pandas as pd
 import shap
+from src.artifacts import write_json_atomic
 from src.model_contracts import positive_class_index
 
 
@@ -225,21 +225,7 @@ def analyze_root_causes():
         },
     }
 
-    OUTPUT_PATH.parent.mkdir(
-        exist_ok=True
-    )
-
-    with open(
-        OUTPUT_PATH,
-        "w",
-        encoding="utf-8",
-    ) as file:
-
-        json.dump(
-            report,
-            file,
-            indent=4,
-        )
+    write_json_atomic(OUTPUT_PATH, report)
 
     print(
         "\nReport saved →",

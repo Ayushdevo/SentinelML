@@ -4,6 +4,7 @@ from numbers import Real
 from pathlib import Path
 
 import pandas as pd
+from src.artifacts import write_json_atomic
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -270,21 +271,7 @@ def calculate_health():
         },
     }
 
-    OUTPUT_PATH.parent.mkdir(
-        exist_ok=True
-    )
-
-    with open(
-        OUTPUT_PATH,
-        "w",
-        encoding="utf-8",
-    ) as file:
-
-        json.dump(
-            report,
-            file,
-            indent=4,
-        )
+    write_json_atomic(OUTPUT_PATH, report)
 
     # ---------------------------------
     # Console output

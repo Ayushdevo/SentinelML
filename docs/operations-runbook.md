@@ -34,6 +34,10 @@ The dashboard's HIGH-risk observations section can export the displayed
 observations as CSV for offline review. The download is disabled when there
 are no HIGH-risk rows.
 
+JSON monitoring reports and baseline metrics are replaced atomically. If a
+report cannot be serialized, the last successfully written version remains
+available.
+
 ## Failure handling
 
 ### Only one dataset exists
