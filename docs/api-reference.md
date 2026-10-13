@@ -28,7 +28,9 @@ prediction. Corrupt or incompatible artifacts return HTTP 503.
 
 ## `GET /health`
 
-Returns the current model-health report. The endpoint returns HTTP 503 when the report has not been generated.
+Returns the current model-health report. The endpoint returns HTTP 503 when
+the report has not been generated, cannot be read, or does not contain a JSON
+object.
 
 ## `POST /predict`
 

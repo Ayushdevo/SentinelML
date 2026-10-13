@@ -69,6 +69,8 @@ def model_health():
         raise HTTPException(
             status_code=503, detail="Model health report is unreadable"
         ) from exc
+    if not isinstance(health, dict):
+        raise HTTPException(status_code=503, detail="Invalid model health report")
 
     return health
 

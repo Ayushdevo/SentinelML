@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from api import main
@@ -36,6 +37,18 @@ def test_corrupt_health_report_returns_503(tmp_path, monkeypatch):
     assert response.json()["detail"] == "Model health report is unreadable"
 
 
+@pytest.mark.parametrize("contents", ["[]", '"healthy"', "42", "null"])
+def test_nonobject_health_report_returns_503(tmp_path, monkeypatch, contents):
+    report = tmp_path / "health.json"
+    report.write_text(contents, encoding="utf-8")
+    monkeypatch.setattr(main, "HEALTH_PATH", report)
+
+    response = TestClient(main.app).get("/health")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Invalid model health report"
+
+
 def test_predict_uses_label_one_when_model_class_order_is_reversed(monkeypatch):
     import numpy as np
 
@@ -53,9 +66,6 @@ def test_predict_uses_label_one_when_model_class_order_is_reversed(monkeypatch):
     assert response.status_code == 200
     assert response.json()["churn_probability"] == 0.8
     assert response.json()["prediction"] == 1
-
-
-import pytest
 
 
 @pytest.mark.parametrize("probs", [[[float("nan"), 0.5]], [[1.5, -0.5]], [[0.5]]])
