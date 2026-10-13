@@ -71,3 +71,23 @@ def test_predict_rejects_invalid_model_probabilities(probs, monkeypatch):
     response = TestClient(main.app).post("/predict", json=payload)
     assert response.status_code == 503
     assert response.json()["detail"] == "Model returned invalid probabilities"
+
+
+def test_prediction_runtime_failure_returns_503_and_is_logged(monkeypatch, caplog):
+    import logging
+
+    class FailingModel:
+        classes_ = [0, 1]
+
+        def predict_proba(self, frame):
+            raise RuntimeError("backend unavailable")
+
+    monkeypatch.setattr(main, "load_model", lambda: FailingModel())
+    payload = dict.fromkeys(main.PredictionRequest.model_fields, 1.0)
+
+    with caplog.at_level(logging.ERROR, logger=main.__name__):
+        response = TestClient(main.app).post("/predict", json=payload)
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Model prediction failed"
+    assert "Model prediction failed" in caplog.text

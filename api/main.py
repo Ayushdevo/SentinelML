@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import logging
 from functools import lru_cache
 
 import joblib
@@ -20,6 +21,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+logger = logging.getLogger(__name__)
+
+
 @lru_cache(maxsize=1)
 def load_model():
     if not MODEL_PATH.exists():
@@ -27,6 +31,7 @@ def load_model():
     try:
         model = joblib.load(MODEL_PATH)
     except Exception as exc:
+        logger.exception("Unable to load the baseline model")
         raise HTTPException(status_code=503, detail="Baseline model is unreadable") from exc
     if not callable(getattr(model, "predict_proba", None)):
         raise HTTPException(status_code=503, detail="Baseline model does not support prediction")
@@ -114,7 +119,11 @@ def predict(data: PredictionRequest):
         positive_index = positive_class_index(model)
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    probabilities = np.asarray(model.predict_proba(input_df), dtype=float)
+    try:
+        probabilities = np.asarray(model.predict_proba(input_df), dtype=float)
+    except Exception as exc:
+        logger.exception("Model prediction failed")
+        raise HTTPException(status_code=503, detail="Model prediction failed") from exc
     if (
         probabilities.shape != (1, 2)
         or not np.isfinite(probabilities).all()
