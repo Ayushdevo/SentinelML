@@ -1,6 +1,7 @@
 # Monitoring Contract
 
 This document defines the current meaning of SentinelML monitoring outputs.
+Also thier non-existable answer behaviour that takes large data sets to minimize the operations.
 
 ## Drift
 
