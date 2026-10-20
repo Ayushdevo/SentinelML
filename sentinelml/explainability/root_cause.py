@@ -7,7 +7,13 @@ class RootCauseExplainer:
     """Analyzes SHAP feature attribution matrices to rank root causes of model prediction failures."""
     
     def __init__(self, feature_names: List[str]):
-        self.feature_names = feature_names
+        if isinstance(feature_names, (str, bytes)):
+            raise ValueError("feature_names must be a nonempty sequence of unique nonempty strings")
+        names = list(feature_names)
+        if (not names or any(not isinstance(name, str) or not name.strip() for name in names)
+                or len(set(names)) != len(names)):
+            raise ValueError("feature_names must be a nonempty sequence of unique nonempty strings")
+        self.feature_names = names
 
     def rank_contributing_features(
         self, 

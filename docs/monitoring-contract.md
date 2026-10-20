@@ -77,3 +77,12 @@ The standalone `compute_ks_drift` interprets `threshold` as a significance level
 `critical_value` is an alpha-dependent asymptotic diagnostic; the decision uses
 the p-value. This corrects earlier false alarms on small samples. The pipeline's
 Holm-adjusted drift calculation is unchanged.
+
+
+## Standalone root-cause ranking
+
+`RootCauseExplainer` requires unique, nonempty string feature names and copies
+that sequence so later caller edits cannot relabel explanations. Attribution
+inputs must be finite, nonempty observation-by-feature matrices with the declared
+feature count; baseline and current observation counts may differ. `top_k` must
+be a positive integer; values above the feature count return all features.

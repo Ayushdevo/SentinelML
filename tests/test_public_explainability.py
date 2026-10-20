@@ -38,3 +38,17 @@ def test_explainer_caps_requested_count_at_available_features():
         [[0.1, 0.2]], [[0.1, 0.9]], top_k=10
     )
     assert len(causes) == 2
+
+
+@pytest.mark.parametrize("names", [[], ["a", "a"], [""], [1], "signal"])
+def test_explainer_rejects_invalid_feature_metadata(names):
+    with pytest.raises(ValueError, match="feature_names"):
+        RootCauseExplainer(names)
+
+
+def test_explainer_copies_feature_names_to_preserve_attribution_identity():
+    names = ["a", "b"]
+    explainer = RootCauseExplainer(names)
+    names[1] = "wrong"
+    causes = explainer.rank_contributing_features([[0.1, 0.2]], [[0.1, 0.9]], top_k=1)
+    assert causes[0]["feature"] == "b"
