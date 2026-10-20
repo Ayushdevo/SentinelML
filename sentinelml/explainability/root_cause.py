@@ -1,3 +1,5 @@
+from numbers import Integral
+
 import numpy as np
 from typing import List, Dict, Any
 
@@ -16,6 +18,8 @@ class RootCauseExplainer:
         """
         Calculates mean absolute SHAP shift per feature and returns the top-k drivers of failure.
         """
+        if isinstance(top_k, bool) or not isinstance(top_k, Integral) or top_k < 1:
+            raise ValueError("top_k must be a positive integer")
         baseline_shap_values = np.asarray(baseline_shap_values, dtype=float)
         degraded_shap_values = np.asarray(degraded_shap_values, dtype=float)
         for values in (baseline_shap_values, degraded_shap_values):

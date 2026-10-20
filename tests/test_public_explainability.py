@@ -23,3 +23,18 @@ def test_explainer_allows_different_observation_counts():
     )
     assert causes[0]["feature"] == "b"
     assert causes[0]["shift_magnitude"] == pytest.approx(0.7)
+
+
+@pytest.mark.parametrize("top_k", [True, 0, -1, 1.5, "1"])
+def test_explainer_requires_positive_integer_top_k(top_k):
+    with pytest.raises(ValueError, match="top_k"):
+        RootCauseExplainer(["a", "b"]).rank_contributing_features(
+            [[0.1, 0.2]], [[0.1, 0.9]], top_k=top_k
+        )
+
+
+def test_explainer_caps_requested_count_at_available_features():
+    causes = RootCauseExplainer(["a", "b"]).rank_contributing_features(
+        [[0.1, 0.2]], [[0.1, 0.9]], top_k=10
+    )
+    assert len(causes) == 2
