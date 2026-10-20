@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from typing import Tuple
 
 class DataSanitizer:
@@ -7,6 +7,10 @@ class DataSanitizer:
     @staticmethod
     def sanitize_arrays(baseline: np.ndarray, current: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Removes NaN and infinite values, ensuring non-empty clean arrays."""
+        baseline = np.asarray(baseline, dtype=float)
+        current = np.asarray(current, dtype=float)
+        if baseline.ndim != 1 or current.ndim != 1:
+            raise ValueError("Distributions must be one-dimensional numeric samples")
         clean_base = baseline[np.isfinite(baseline)]
         clean_curr = current[np.isfinite(current)]
         
