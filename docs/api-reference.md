@@ -68,3 +68,9 @@ Fitted feature names must match the request schema exactly; valid names are
 reordered into the fitted model's order. Incompatible feature names or churn
 class labels return HTTP 503. Churn classes must be numeric 0 and 1, and the
 positive probability is selected by class label rather than column position.
+
+
+Health, readiness, and metrics report readers require valid UTF-8 JSON. Invalid
+encoding, nonstandard NaN/Infinity constants, and JSON numbers that overflow a
+finite floating-point value return HTTP 503 with an unreadable-report error.
+Ordinary strings containing words such as "NaN" remain valid JSON data.

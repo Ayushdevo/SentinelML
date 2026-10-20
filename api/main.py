@@ -1,5 +1,4 @@
 from pathlib import Path
-import json
 import logging
 from functools import lru_cache
 from numbers import Real
@@ -10,6 +9,7 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from src.model_contracts import model_feature_order, positive_class_index
+from src.artifacts import read_json
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -71,9 +71,8 @@ def model_health():
     if not HEALTH_PATH.exists():
         raise HTTPException(status_code=503, detail="Model health report is not available")
     try:
-        with open(HEALTH_PATH, "r", encoding="utf-8") as file:
-            health = json.load(file)
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        health = read_json(HEALTH_PATH)
+    except (OSError, ValueError) as exc:
         raise HTTPException(
             status_code=503, detail="Model health report is unreadable"
         ) from exc
@@ -88,9 +87,8 @@ def baseline_metrics():
     if not METRICS_PATH.exists():
         raise HTTPException(status_code=503, detail="Baseline metrics are not available")
     try:
-        with open(METRICS_PATH, "r", encoding="utf-8") as file:
-            metrics = json.load(file)
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        metrics = read_json(METRICS_PATH)
+    except (OSError, ValueError) as exc:
         raise HTTPException(
             status_code=503, detail="Baseline metrics are unreadable"
         ) from exc
@@ -116,9 +114,8 @@ def readiness():
     if missing:
         raise HTTPException(status_code=503, detail={"missing_artifacts": missing})
     try:
-        with open(HEALTH_PATH, "r", encoding="utf-8") as file:
-            report = json.load(file)
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        report = read_json(HEALTH_PATH)
+    except (OSError, ValueError) as exc:
         raise HTTPException(
             status_code=503, detail="Model health report is unreadable"
         ) from exc
