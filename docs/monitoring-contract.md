@@ -51,3 +51,12 @@ report.
 ## Compatibility
 
 Changes to thresholds, report field names, or risk semantics should be documented and covered by tests because dashboards and downstream consumers may rely on them.
+
+
+## Standalone numeric drift utilities
+
+The `sentinelml.drift` helpers accept one-dimensional numeric array-like
+samples. They remove NaN and infinite observations independently from each
+sample and reject samples with no finite observations. This differs from the
+pipeline's `src.drift_detector`, which rejects nonfinite values after handling
+missing data. Filtering does not mutate the caller's input.

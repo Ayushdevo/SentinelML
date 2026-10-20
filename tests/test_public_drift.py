@@ -21,3 +21,15 @@ def test_sanitizer_accepts_numeric_array_likes_without_mutation():
 def test_sanitizer_rejects_nonvector_samples(bad):
     with pytest.raises(ValueError, match="one-dimensional"):
         DataSanitizer.sanitize_arrays(bad, [1.0, 2.0])
+
+
+def test_public_psi_filters_nonfinite_samples_consistently():
+    clean = calculate_psi([0.0, 1.0, 2.0], [0.0, 1.0, 2.0])
+    dirty = calculate_psi([0.0, np.nan, 1.0, 2.0], [0.0, 1.0, np.inf, 2.0])
+    assert dirty == pytest.approx(clean)
+
+
+@pytest.mark.parametrize("bad", [[], [np.nan, np.inf]])
+def test_public_psi_rejects_distributions_without_finite_samples(bad):
+    with pytest.raises(ValueError, match="finite samples"):
+        calculate_psi(bad, [1.0, 2.0])

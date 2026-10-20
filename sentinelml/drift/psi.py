@@ -1,9 +1,9 @@
-﻿import numpy as np
+import numpy as np
+from sentinelml.drift.sanitizer import DataSanitizer
 
 def calculate_psi(baseline: np.ndarray, current: np.ndarray, num_buckets: int = 10, epsilon: float = 1e-4) -> float:
     """Calculates the Population Stability Index between baseline and current data distributions."""
-    baseline = np.asarray(baseline, dtype=float)
-    current = np.asarray(current, dtype=float)
+    baseline, current = DataSanitizer.sanitize_arrays(baseline, current)
 
     quantiles = np.linspace(0, 100, num_buckets + 1)
     bins = np.percentile(baseline, quantiles)
