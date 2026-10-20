@@ -73,7 +73,7 @@ def model_health():
     try:
         with open(HEALTH_PATH, "r", encoding="utf-8") as file:
             health = json.load(file)
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise HTTPException(
             status_code=503, detail="Model health report is unreadable"
         ) from exc
@@ -90,7 +90,7 @@ def baseline_metrics():
     try:
         with open(METRICS_PATH, "r", encoding="utf-8") as file:
             metrics = json.load(file)
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise HTTPException(
             status_code=503, detail="Baseline metrics are unreadable"
         ) from exc
@@ -118,7 +118,7 @@ def readiness():
     try:
         with open(HEALTH_PATH, "r", encoding="utf-8") as file:
             report = json.load(file)
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise HTTPException(
             status_code=503, detail="Model health report is unreadable"
         ) from exc
