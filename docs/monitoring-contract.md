@@ -64,3 +64,9 @@ missing data. Filtering does not mutate the caller's input.
 Standalone PSI requires at least two integer buckets and a finite smoothing
 `epsilon` strictly between zero and one. Boolean configuration values are
 rejected rather than interpreted as numbers.
+
+PSI removes repeated reference quantile boundaries. When the reference has too
+few distinct quantiles, it uses equal-width boundaries over both samples;
+identical constant populations return zero. Smoothed histogram probabilities
+are renormalized before scoring. Shifts between different constant populations
+therefore remain detectable instead of silently returning zero.

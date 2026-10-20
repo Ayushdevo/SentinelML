@@ -13,7 +13,13 @@ def calculate_psi(baseline: np.ndarray, current: np.ndarray, num_buckets: int = 
     baseline, current = DataSanitizer.sanitize_arrays(baseline, current)
 
     quantiles = np.linspace(0, 100, num_buckets + 1)
-    bins = np.percentile(baseline, quantiles)
+    bins = np.unique(np.percentile(baseline, quantiles))
+    if len(bins) < 3:
+        low = min(baseline.min(), current.min())
+        high = max(baseline.max(), current.max())
+        if low == high:
+            return 0.0
+        bins = np.linspace(low, high, num_buckets + 1)
     bins[0] = -np.inf
     bins[-1] = np.inf
 
@@ -25,6 +31,8 @@ def calculate_psi(baseline: np.ndarray, current: np.ndarray, num_buckets: int = 
 
     baseline_pct = np.clip(baseline_pct, epsilon, None)
     current_pct = np.clip(current_pct, epsilon, None)
+    baseline_pct /= baseline_pct.sum()
+    current_pct /= current_pct.sum()
 
     psi_value = np.sum((current_pct - baseline_pct) * np.log(current_pct / baseline_pct))
     return float(psi_value)

@@ -45,3 +45,15 @@ def test_public_psi_requires_at_least_two_integer_buckets(buckets):
 def test_public_psi_rejects_invalid_smoothing(epsilon):
     with pytest.raises(ValueError, match="epsilon"):
         calculate_psi([1.0, 2.0], [2.0, 3.0], epsilon=epsilon)
+
+
+def test_public_psi_detects_constant_population_shifts():
+    assert calculate_psi([0.0] * 20, [1.0] * 10) > 0.25
+    assert calculate_psi([7.0] * 20, [7.0] * 10) == 0
+
+
+def test_public_psi_handles_repeated_quantiles_and_sample_sizes():
+    reference = [0.0] * 90 + [1.0] * 10
+    assert calculate_psi(reference, reference * 2) == pytest.approx(0)
+    score = calculate_psi(reference, [0.0] * 10 + [1.0] * 90)
+    assert np.isfinite(score) and score > 0.25
