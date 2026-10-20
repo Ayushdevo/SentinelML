@@ -60,3 +60,7 @@ samples. They remove NaN and infinite observations independently from each
 sample and reject samples with no finite observations. This differs from the
 pipeline's `src.drift_detector`, which rejects nonfinite values after handling
 missing data. Filtering does not mutate the caller's input.
+
+Standalone PSI requires at least two integer buckets and a finite smoothing
+`epsilon` strictly between zero and one. Boolean configuration values are
+rejected rather than interpreted as numbers.

@@ -33,3 +33,15 @@ def test_public_psi_filters_nonfinite_samples_consistently():
 def test_public_psi_rejects_distributions_without_finite_samples(bad):
     with pytest.raises(ValueError, match="finite samples"):
         calculate_psi(bad, [1.0, 2.0])
+
+
+@pytest.mark.parametrize("buckets", [True, 0, 1, 2.5, "10"])
+def test_public_psi_requires_at_least_two_integer_buckets(buckets):
+    with pytest.raises(ValueError, match="num_buckets"):
+        calculate_psi([1.0, 2.0], [2.0, 3.0], num_buckets=buckets)
+
+
+@pytest.mark.parametrize("epsilon", [True, 0, -0.1, 1.0, float("nan"), float("inf"), "small"])
+def test_public_psi_rejects_invalid_smoothing(epsilon):
+    with pytest.raises(ValueError, match="epsilon"):
+        calculate_psi([1.0, 2.0], [2.0, 3.0], epsilon=epsilon)
