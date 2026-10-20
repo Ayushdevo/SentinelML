@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from typing import List, Dict, Any
 
 class RootCauseExplainer:
@@ -16,6 +16,13 @@ class RootCauseExplainer:
         """
         Calculates mean absolute SHAP shift per feature and returns the top-k drivers of failure.
         """
+        baseline_shap_values = np.asarray(baseline_shap_values, dtype=float)
+        degraded_shap_values = np.asarray(degraded_shap_values, dtype=float)
+        for values in (baseline_shap_values, degraded_shap_values):
+            if (values.ndim != 2 or values.shape[0] == 0
+                    or values.shape[1] != len(self.feature_names)
+                    or not np.isfinite(values).all()):
+                raise ValueError("SHAP attributions must be finite nonempty observation-by-feature matrices")
         baseline_mean_abs = np.mean(np.abs(baseline_shap_values), axis=0)
         degraded_mean_abs = np.mean(np.abs(degraded_shap_values), axis=0)
         
