@@ -70,3 +70,10 @@ few distinct quantiles, it uses equal-width boundaries over both samples;
 identical constant populations return zero. Smoothed histogram probabilities
 are renormalized before scoring. Shifts between different constant populations
 therefore remain detectable instead of silently returning zero.
+
+The standalone `compute_ks_drift` interprets `threshold` as a significance level
+(default 0.05), not a minimum ECDF distance. It returns SciPy's two-sided KS
+`statistic` and `p_value`, and flags drift only when `p_value < threshold`.
+`critical_value` is an alpha-dependent asymptotic diagnostic; the decision uses
+the p-value. This corrects earlier false alarms on small samples. The pipeline's
+Holm-adjusted drift calculation is unchanged.

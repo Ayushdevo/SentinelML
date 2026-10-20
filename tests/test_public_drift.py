@@ -57,3 +57,27 @@ def test_public_psi_handles_repeated_quantiles_and_sample_sizes():
     assert calculate_psi(reference, reference * 2) == pytest.approx(0)
     score = calculate_psi(reference, [0.0] * 10 + [1.0] * 90)
     assert np.isfinite(score) and score > 0.25
+
+
+def test_public_ks_uses_significance_instead_of_a_fixed_distance_cutoff():
+    baseline = np.arange(10, dtype=float)
+    current = baseline + 0.1
+    result = compute_ks_drift(baseline, current)
+    expected = ks_2samp(baseline, current)
+    assert result["statistic"] == pytest.approx(expected.statistic)
+    assert result["p_value"] == pytest.approx(expected.pvalue)
+    assert result["is_drifted"] == bool(expected.pvalue < 0.05)
+    assert not result["is_drifted"]
+
+
+@pytest.mark.parametrize("threshold", [True, 0, 1, -0.1, np.nan, np.inf, "0.05"])
+def test_public_ks_rejects_invalid_significance_levels(threshold):
+    with pytest.raises(ValueError, match="threshold"):
+        compute_ks_drift([0.0, 1.0], [1.0, 2.0], threshold=threshold)
+
+
+def test_public_ks_reports_alpha_dependent_critical_values():
+    reference = np.arange(30, dtype=float)
+    strict = compute_ks_drift(reference, reference + 0.1, threshold=0.01)
+    loose = compute_ks_drift(reference, reference + 0.1, threshold=0.10)
+    assert strict["critical_value"] > loose["critical_value"]
