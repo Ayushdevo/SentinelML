@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import joblib
 import pytest
 from fastapi.testclient import TestClient
@@ -12,11 +15,14 @@ def clear_model_cache():
     main.load_model.cache_clear()
 
 
-@pytest.mark.parametrize("path_kind, detail", [
-    ("corrupt", "Baseline model is unreadable"),
-    ("directory", "Baseline model is unreadable"),
-    ("wrong_object", "Baseline model does not support prediction"),
-])
+@pytest.mark.parametrize(
+    "path_kind, detail",
+    [
+        ("corrupt", "Baseline model is unreadable"),
+        ("directory", "Baseline model is unreadable"),
+        ("wrong_object", "Baseline model does not support prediction"),
+    ],
+)
 def test_invalid_artifacts_return_503_for_prediction_and_readiness(
     tmp_path, monkeypatch, path_kind, detail
 ):
@@ -28,7 +34,16 @@ def test_invalid_artifacts_return_503_for_prediction_and_readiness(
     else:
         model_path.write_bytes(b"corrupt artifact")
     report = tmp_path / "health.json"
-    report.write_text("{}", encoding="utf-8")
+    report.write_text(
+        json.dumps(
+            json.loads(
+                (
+                    Path(main.PROJECT_ROOT) / "models/model_health_report.json"
+                ).read_text()
+            )
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(main, "MODEL_PATH", model_path)
     monkeypatch.setattr(main, "HEALTH_PATH", report)
     client = TestClient(main.app)

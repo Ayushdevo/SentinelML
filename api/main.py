@@ -1,16 +1,18 @@
-from pathlib import Path
 import logging
 from functools import lru_cache
 from numbers import Real
+from pathlib import Path
+from threading import RLock
+from typing import Literal
 
 import joblib
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict, Field
-from src.model_contracts import model_feature_order, positive_class_index
-from src.artifacts import read_json
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from src.artifacts import read_json
+from src.model_contracts import model_feature_order, positive_class_index
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MODEL_PATH = PROJECT_ROOT / "models" / "baseline_model.joblib"
@@ -27,18 +29,55 @@ app = FastAPI(
 logger = logging.getLogger(__name__)
 
 
+_model_lock = RLock()
+
+
 @lru_cache(maxsize=1)
-def load_model():
-    if not MODEL_PATH.exists():
-        raise HTTPException(status_code=503, detail="Baseline model is not available")
+def _load_model_version(path, signature):
     try:
-        model = joblib.load(MODEL_PATH)
+        model = joblib.load(path)
     except Exception as exc:
         logger.exception("Unable to load the baseline model")
-        raise HTTPException(status_code=503, detail="Baseline model is unreadable") from exc
+        raise HTTPException(
+            status_code=503, detail="Baseline model is unreadable"
+        ) from exc
     if not callable(getattr(model, "predict_proba", None)):
-        raise HTTPException(status_code=503, detail="Baseline model does not support prediction")
+        raise HTTPException(
+            status_code=503, detail="Baseline model does not support prediction"
+        )
     return model
+
+
+def load_model():
+    """Reload on artifact changes while reusing unchanged models within a worker.
+
+    Deploy new artifacts with an atomic replacement. Inode and ctime are included
+    so replacements preserving mtime and file size also invalidate the cache.
+    """
+    with _model_lock:
+        path = Path(MODEL_PATH).absolute()
+        try:
+            stat = path.stat()
+        except FileNotFoundError as exc:
+            raise HTTPException(
+                status_code=503, detail="Baseline model is not available"
+            ) from exc
+        except OSError as exc:
+            raise HTTPException(
+                status_code=503, detail="Baseline model is unreadable"
+            ) from exc
+        signature = (
+            stat.st_dev,
+            stat.st_ino,
+            stat.st_size,
+            stat.st_mtime_ns,
+            stat.st_ctime_ns,
+        )
+        return _load_model_version(path, signature)
+
+
+# Preserve the existing explicit cache-reset hook used by tests and operators.
+load_model.cache_clear = _load_model_version.cache_clear
 
 
 class PredictionRequest(BaseModel):
@@ -58,6 +97,18 @@ class PredictionBatchRequest(BaseModel):
     predictions: list[PredictionRequest] = Field(min_length=1, max_length=100)
 
 
+class HealthReport(BaseModel):
+    """Required top-level contract, shared by health reads and readiness."""
+
+    model_config = ConfigDict(strict=True, allow_inf_nan=False)
+    health_score: float = Field(ge=0, le=100)
+    health_status: Literal["HEALTHY", "WATCH", "DEGRADED", "CRITICAL"]
+    metrics: dict
+    drift: dict
+    top_high_risk_drivers: dict
+    retraining: dict
+
+
 @app.get("/")
 def root():
     return {
@@ -69,15 +120,21 @@ def root():
 @app.get("/health")
 def model_health():
     if not HEALTH_PATH.exists():
-        raise HTTPException(status_code=503, detail="Model health report is not available")
+        raise HTTPException(
+            status_code=503, detail="Model health report is not available"
+        )
     try:
         health = read_json(HEALTH_PATH)
     except (OSError, ValueError) as exc:
         raise HTTPException(
             status_code=503, detail="Model health report is unreadable"
         ) from exc
-    if not isinstance(health, dict):
-        raise HTTPException(status_code=503, detail="Invalid model health report")
+    try:
+        HealthReport.model_validate(health)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=503, detail="Invalid model health report"
+        ) from exc
 
     return health
 
@@ -85,7 +142,9 @@ def model_health():
 @app.get("/metrics")
 def baseline_metrics():
     if not METRICS_PATH.exists():
-        raise HTTPException(status_code=503, detail="Baseline metrics are not available")
+        raise HTTPException(
+            status_code=503, detail="Baseline metrics are not available"
+        )
     try:
         metrics = read_json(METRICS_PATH)
     except (OSError, ValueError) as exc:
@@ -113,14 +172,7 @@ def readiness():
     missing = [str(path) for path in (MODEL_PATH, HEALTH_PATH) if not path.exists()]
     if missing:
         raise HTTPException(status_code=503, detail={"missing_artifacts": missing})
-    try:
-        report = read_json(HEALTH_PATH)
-    except (OSError, ValueError) as exc:
-        raise HTTPException(
-            status_code=503, detail="Model health report is unreadable"
-        ) from exc
-    if not isinstance(report, dict):
-        raise HTTPException(status_code=503, detail="Invalid model health report")
+    model_health()
     load_model()
     return {"status": "ready"}
 

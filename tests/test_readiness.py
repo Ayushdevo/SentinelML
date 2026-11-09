@@ -1,5 +1,8 @@
-from fastapi.testclient import TestClient
+import json
+from pathlib import Path
+
 import joblib
+from fastapi.testclient import TestClient
 from sklearn.dummy import DummyClassifier
 
 from api import main
@@ -24,7 +27,16 @@ def test_readiness_succeeds_when_required_artifacts_exist(tmp_path, monkeypatch)
     model_path = tmp_path / "model.joblib"
     health_path = tmp_path / "health.json"
     joblib.dump(DummyClassifier().fit([[0], [1]], [0, 1]), model_path)
-    health_path.write_text("{}", encoding="utf-8")
+    health_path.write_text(
+        json.dumps(
+            json.loads(
+                (
+                    Path(main.PROJECT_ROOT) / "models/model_health_report.json"
+                ).read_text()
+            )
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(main, "MODEL_PATH", model_path)
     monkeypatch.setattr(main, "HEALTH_PATH", health_path)
 
