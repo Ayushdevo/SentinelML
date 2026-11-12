@@ -27,6 +27,22 @@ NON_FEATURE_COLUMNS = {
 }
 
 
+
+def _mean_absolute_attributions(values):
+    absolute = np.abs(values)
+    scale = np.max(absolute, axis=0)
+    normalized = np.divide(absolute, scale, out=np.zeros_like(absolute), where=scale != 0)
+    return np.mean(normalized, axis=0) * scale
+
+
+def _importance_percentages(values):
+    scale = np.max(values)
+    if scale == 0:
+        return np.zeros_like(values)
+    normalized = values / scale
+    return normalized / normalized.sum() * 100
+
+
 def analyze_root_causes():
 
     print("\nSENTINELML — ROOT CAUSE ANALYSIS")
@@ -87,9 +103,7 @@ def analyze_root_causes():
     # 2. Global feature importance
     # --------------------------------
 
-    mean_abs_shap = np.abs(
-        shap_values
-    ).mean(axis=0)
+    mean_abs_shap = _mean_absolute_attributions(shap_values)
 
     importance = pd.DataFrame(
         {
@@ -103,18 +117,9 @@ def analyze_root_causes():
         ascending=False,
     )
 
-    total_importance = (
-        importance["mean_abs_shap"].sum()
+    importance["importance_percent"] = _importance_percentages(
+        importance["mean_abs_shap"].to_numpy()
     )
-
-    if total_importance > 0:
-        importance["importance_percent"] = (
-            importance["mean_abs_shap"]
-            / total_importance
-            * 100
-        )
-    else:
-        importance["importance_percent"] = 0
 
     # --------------------------------
     # 3. Analyze HIGH-risk predictions
@@ -136,26 +141,11 @@ def analyze_root_causes():
             shap_values[high_risk_mask]
         )
 
-        high_risk_importance = (
-            high_risk_shap.mean(axis=0)
-        )
+        high_risk_importance = _mean_absolute_attributions(high_risk_shap)
+        percentages = _importance_percentages(high_risk_importance)
 
-        total_high = (
-            high_risk_importance.sum()
-        )
-
-        for feature, value in zip(
-            features,
-            high_risk_importance,
-        ):
-
-            percent = (
-                float(value / total_high * 100)
-                if total_high > 0
-                else 0.0
-            )
-
-            high_risk_causes[feature] = percent
+        for feature, percent in zip(features, percentages):
+            high_risk_causes[feature] = float(percent)
 
         high_risk_causes = dict(
             sorted(
