@@ -33,8 +33,14 @@ class RootCauseExplainer:
                     or values.shape[1] != len(self.feature_names)
                     or not np.isfinite(values).all()):
                 raise ValueError("SHAP attributions must be finite nonempty observation-by-feature matrices")
-        baseline_mean_abs = np.mean(np.abs(baseline_shap_values), axis=0)
-        degraded_mean_abs = np.mean(np.abs(degraded_shap_values), axis=0)
+        def mean_abs(values):
+            absolute = np.abs(values)
+            scale = np.max(absolute, axis=0)
+            normalized = np.divide(absolute, scale, out=np.zeros_like(absolute), where=scale != 0)
+            return np.mean(normalized, axis=0) * scale
+
+        baseline_mean_abs = mean_abs(baseline_shap_values)
+        degraded_mean_abs = mean_abs(degraded_shap_values)
         
         shift_magnitudes = np.abs(degraded_mean_abs - baseline_mean_abs)
         top_indices = np.argsort(shift_magnitudes)[::-1][:top_k]
