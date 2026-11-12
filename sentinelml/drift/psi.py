@@ -12,6 +12,13 @@ def calculate_psi(baseline: np.ndarray, current: np.ndarray, num_buckets: int = 
         raise ValueError("epsilon must be finite and strictly between zero and one")
     baseline, current = DataSanitizer.sanitize_arrays(baseline, current)
 
+    # Large opposite-sign values can overflow percentile interpolation or
+    # linspace subtraction. Positive scaling preserves bucket membership.
+    scale = max(np.max(np.abs(baseline)), np.max(np.abs(current)))
+    if scale > 1e150:
+        baseline = baseline / scale
+        current = current / scale
+
     quantiles = np.linspace(0, 100, num_buckets + 1)
     bins = np.unique(np.percentile(baseline, quantiles))
     if len(bins) < 3:
