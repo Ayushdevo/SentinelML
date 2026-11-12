@@ -29,3 +29,15 @@ def test_health_allows_empty_drivers_when_no_high_risk_observations(tmp_path, mo
     }), encoding="utf-8")
     engine.calculate_health()
     assert json.loads((tmp_path / "out.json").read_text())["top_high_risk_drivers"] == {}
+
+
+def test_health_rejects_stale_high_risk_drivers_when_no_observations_are_high_risk(tmp_path, monkeypatch):
+    setup_health(tmp_path, monkeypatch, {
+        "is_anomaly": 0, "high_uncertainty": 0, "prediction_risk": "LOW",
+    })
+    (tmp_path / "causes.json").write_text(json.dumps({
+        "high_risk_observations": 0, "high_risk_root_causes": {"signal": 100.0},
+    }), encoding="utf-8")
+    with pytest.raises(ValueError, match="high-risk.*root-cause"):
+        engine.calculate_health()
+    assert not (tmp_path / "out.json").exists()

@@ -193,6 +193,8 @@ def calculate_health():
         raise ValueError("Root-cause contributions must be an object")
     if high_risk_rate > 0 and not root_causes:
         raise ValueError("Missing high-risk root-cause contributions for production observations")
+    if high_risk_rate == 0 and root_causes:
+        raise ValueError("Stale high-risk root-cause contributions without high-risk observations")
     for contribution in root_causes.values():
         if isinstance(contribution, bool) or not isinstance(contribution, Real):
             raise ValueError("Root-cause contributions must be finite percentages between 0 and 100")
