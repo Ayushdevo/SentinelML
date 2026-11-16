@@ -37,6 +37,12 @@ def calculate_psi(expected, actual, bins=10):
     if np.min(expected) == np.max(expected) == np.min(actual) == np.max(actual):
         return 0.0
 
+    # Scaling extreme values avoids overflow in quantile and bin interpolation.
+    scale = max(np.max(np.abs(expected)), np.max(np.abs(actual)))
+    if scale > 1e150:
+        expected = expected / scale
+        actual = actual / scale
+
     # Quantile-based bins from reference distribution
     breakpoints = np.unique(
         np.quantile(
