@@ -1,3 +1,5 @@
+from numbers import Real
+
 import numpy as np
 from typing import Tuple
 
@@ -21,5 +23,15 @@ class DataSanitizer:
 
     @staticmethod
     def is_constant_feature(data: np.ndarray, tolerance: float = 1e-8) -> bool:
-        """Flags degenerate zero-variance features to prevent division by zero in bucket calculations."""
-        return bool(np.std(data) < tolerance)
+        """Flag low-variance finite samples using an absolute standard-deviation tolerance."""
+        if (isinstance(tolerance, bool) or not isinstance(tolerance, Real)
+                or not np.isfinite(tolerance) or tolerance < 0):
+            raise ValueError("tolerance must be a finite nonnegative number")
+        clean, _ = DataSanitizer.sanitize_arrays(data, data)
+        scale = np.max(np.abs(clean))
+        if scale == 0:
+            return tolerance > 0
+        normalized_std = np.std(clean / scale)
+        if normalized_std == 0:
+            return tolerance > 0
+        return bool(normalized_std * scale < tolerance)
