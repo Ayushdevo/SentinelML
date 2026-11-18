@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
+from src.artifacts import write_csv_atomic
 from src.model_contracts import positive_class_index
 
 
@@ -141,12 +142,7 @@ def analyze_production():
     # Save results
     # ----------------------------
 
-    OUTPUT_PATH.parent.mkdir(exist_ok=True)
-
-    production.to_csv(
-        OUTPUT_PATH,
-        index=False,
-    )
+    write_csv_atomic(OUTPUT_PATH, production)
 
     # ----------------------------
     # Summary

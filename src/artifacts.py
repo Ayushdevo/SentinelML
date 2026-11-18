@@ -29,6 +29,27 @@ def write_json_atomic(path, data):
                 pass
 
 
+def write_csv_atomic(path, dataframe):
+    """Replace a CSV report only after it has been written successfully."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", newline="", dir=path.parent,
+            prefix=f".{path.name}.", suffix=".tmp", delete=False,
+        ) as file:
+            temporary_path = Path(file.name)
+            dataframe.to_csv(file, index=False)
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path is not None:
+            try:
+                temporary_path.unlink()
+            except FileNotFoundError:
+                pass
+
+
 def _reject_json_constant(value):
     raise ValueError(f"Nonfinite JSON number: {value}")
 
