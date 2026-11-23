@@ -201,10 +201,13 @@ def _predict_records(records: list[PredictionRequest]):
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     try:
-        probabilities = np.asarray(model.predict_proba(input_df), dtype=float)
+        raw_probabilities = np.asarray(model.predict_proba(input_df))
     except Exception as exc:
         logger.exception("Model prediction failed")
         raise HTTPException(status_code=503, detail="Model prediction failed") from exc
+    if raw_probabilities.dtype.kind not in "iuf":
+        raise HTTPException(status_code=503, detail="Model returned invalid probabilities")
+    probabilities = raw_probabilities.astype(float, copy=False)
     if (
         probabilities.shape != (len(records), 2)
         or not np.isfinite(probabilities).all()
