@@ -9,8 +9,11 @@ class DataSanitizer:
     @staticmethod
     def sanitize_arrays(baseline: np.ndarray, current: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Removes NaN and infinite values, ensuring non-empty clean arrays."""
-        baseline = np.asarray(baseline, dtype=float)
-        current = np.asarray(current, dtype=float)
+        baseline, current = np.asarray(baseline), np.asarray(current)
+        if np.iscomplexobj(baseline) or np.iscomplexobj(current):
+            raise ValueError("Distributions must contain real-valued samples")
+        baseline = baseline.astype(float, copy=False)
+        current = current.astype(float, copy=False)
         if baseline.ndim != 1 or current.ndim != 1:
             raise ValueError("Distributions must be one-dimensional numeric samples")
         clean_base = baseline[np.isfinite(baseline)]
