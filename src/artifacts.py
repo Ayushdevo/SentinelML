@@ -65,4 +65,7 @@ def _finite_json_float(value):
 def read_json(path):
     """Read UTF-8 report JSON, rejecting nonfinite constants and float overflow."""
     with open(path, "r", encoding="utf-8") as file:
-        return json.load(file, parse_constant=_reject_json_constant, parse_float=_finite_json_float)
+        try:
+            return json.load(file, parse_constant=_reject_json_constant, parse_float=_finite_json_float)
+        except RecursionError as exc:
+            raise ValueError("Report JSON is nested too deeply") from exc
