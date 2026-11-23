@@ -41,5 +41,6 @@ def calculate_psi(baseline: np.ndarray, current: np.ndarray, num_buckets: int = 
     baseline_pct /= baseline_pct.sum()
     current_pct /= current_pct.sum()
 
-    psi_value = np.sum((current_pct - baseline_pct) * np.log(current_pct / baseline_pct))
+    log_ratio = np.log(current_pct) - np.log(baseline_pct)
+    psi_value = np.sum((current_pct - baseline_pct) * log_ratio)
     return float(psi_value)
