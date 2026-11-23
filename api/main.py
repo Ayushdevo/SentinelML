@@ -158,7 +158,6 @@ def baseline_metrics():
         or any(
             isinstance(value, bool)
             or not isinstance(value, Real)
-            or not np.isfinite(value)
             or not 0 <= value <= 1
             for value in metrics.values()
         )
